@@ -16,7 +16,7 @@
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--navy);font-family:var(--font);-webkit-font-smoothing:antialiased}
   a{color:inherit}
-  .wrap{max-width:1280px;margin:0 auto;padding:30px 26px 120px}
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 28px 110px}
 
   /* header */
   .brand{display:flex;align-items:center;gap:15px;margin-bottom:6px}
@@ -51,7 +51,7 @@
   .sw:hover{transform:translateY(-2px)}
   .sw.on{border-color:var(--navy);transform:translateY(-2px);box-shadow:0 10px 22px -14px rgba(32,23,71,.9)}
   .sw .tick{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:18px;font-weight:900}
-  .sw.on .tick{display:flex}
+  .sw .tick{display:none}
   .sectorName{margin-top:9px;font-size:12.5px;font-weight:900;color:var(--navy)}
   .sectorName span{color:var(--charcoal);font-weight:700}
 
@@ -321,7 +321,9 @@ function logoTag(variant,x,y,w,anchor='start'){
   if(state.logo==='ring'){
     const R=h*0.5;
     const col = variant==='wht' ? '#ffffff' : BRAND.navy;
-    return ring(x+w/2, y+R, R, col, 1);   // the brand ring (the "i"), centred in the logo's box
+    // the brand ring (the "i"): left edge on the copy margin (mid = centred, end = right edge)
+    const cxr = anchor==='mid' ? x+w/2 : anchor==='end' ? x+w-R : x+R;
+    return ring(cxr, y+R, R, col, 1);
   }
   const ix = anchor==='mid' ? x : x - w*WM_LEFT;
   return `<image href="${LOGOS[variant]}" x="${ix.toFixed(1)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" preserveAspectRatio="xMinYMid meet"/>`;
