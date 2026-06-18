@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ccircle%20cx='50'%20cy='50'%20r='38.16'%20fill='none'%20stroke='%23fe2458'%20stroke-width='19.68'/%3E%3C/svg%3E">
 <title>Post Studio · Influential</title>
 <style>
   :root{
@@ -309,7 +310,11 @@ function ring(cx,cy,R,color,op=1){
   const rc=R*0.795, sw=R*0.41;
   return `<circle cx="${(+cx).toFixed(1)}" cy="${(+cy).toFixed(1)}" r="${rc.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${sw.toFixed(1)}" opacity="${op}"/>`;
 }
-function logoTag(variant,x,y,w){
+// Brand rule: when the logo sits with copy, the wordmark lettering aligns to the copy's
+// left edge and the ring (the "i"-dot) hangs into the margin. The wordmark starts at 0.204
+// of the logo's width, so for left-aligned (anchor 'start') we shift the image left by that.
+const WM_LEFT = 0.204;
+function logoTag(variant,x,y,w,anchor='start'){
   // Logo mode (ported from Deck Studio): main wordmark · ring mark · off
   if(state.logo==='off') return '';
   const h=w/LOGO_AR;
@@ -318,7 +323,8 @@ function logoTag(variant,x,y,w){
     const col = variant==='wht' ? '#ffffff' : BRAND.navy;
     return ring(x+w/2, y+R, R, col, 1);   // the brand ring (the "i"), centred in the logo's box
   }
-  return `<image href="${LOGOS[variant]}" x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" preserveAspectRatio="xMinYMid meet"/>`;
+  const ix = anchor==='mid' ? x : x - w*WM_LEFT;
+  return `<image href="${LOGOS[variant]}" x="${ix.toFixed(1)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" preserveAspectRatio="xMinYMid meet"/>`;
 }
 function kickerTag(text,x,y,fs,fill,anchor='start'){
   if(!text) return '';
@@ -454,7 +460,7 @@ const TEMPLATES = [
 
     // TALL/SQUARE: circle hero on top, copy centred below
     const cx=W/2, logoW=u*0.24, logoH=logoW/LOGO_AR;
-    s+=logoTag('wht', cx-logoW/2, m, logoW);
+    s+=logoTag('wht', cx-logoW/2, m, logoW, 'mid');
     const head=fitHead(c.head, W-2*m, H*0.24, u*0.085, u*0.04, 0.52, 1.0);
     const headH=head.lines.length*head.fs*head.lh, bFs=head.fs*0.5;
     const bl=c.body?bodyLines(c.body, W-2.2*m, bFs, H*0.14):[];
@@ -539,7 +545,7 @@ const TEMPLATES = [
     const fx=m, fy=m, fw=W-2*m, fh=H-2*m, bw=Math.max(3,u*0.006);
     s+=`<rect x="${fx}" y="${fy}" width="${fw}" height="${fh}" rx="${(u*0.02).toFixed(0)}" fill="none" stroke="${ink}" stroke-width="${bw.toFixed(1)}"/>`;
     const ipw=fw-u*0.12, kFs=u*0.026, ctaH=u*0.06, gap=u*0.03;
-    s+=logoTag(logoOn(bg), W/2-u*0.12, fy+u*0.055, u*0.24);
+    s+=logoTag(logoOn(bg), W/2-u*0.12, fy+u*0.055, u*0.24, 'mid');
     let topY=fy+u*0.055+u*0.24/LOGO_AR+u*0.04;
     if(c.kicker){ s+=kickerTag(c.kicker, W/2, topY+kFs*0.8, kFs, ink, 'middle'); topY+=kFs*1.6; }
     const footTop=fy+fh-u*0.06-(c.cta?ctaH+gap:0);
