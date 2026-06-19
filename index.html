@@ -83,6 +83,7 @@
   .switch::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 2px 5px rgba(0,0,0,.25)}
   .toggle.on .switch{background:var(--red)}
   .toggle.on .switch::after{transform:translateX(19px)}
+  .toggle + .toggle{margin-top:12px}
 
   /* gallery */
   .galHead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 16px;flex-wrap:wrap}
@@ -192,6 +193,9 @@
         <label>Call to action <span>optional</span></label>
         <input id="i_cta" maxlength="34" placeholder="e.g. Read the report">
       </div>
+
+      <h2>Style pack</h2>
+      <div class="seg" id="packMode"></div>
 
       <h2>Sector</h2>
       <div class="sectors" id="sectors"></div>
@@ -335,6 +339,7 @@ const state = {
   active:0,
   sector:'insights',
   placement:'portrait',
+  pack:'studio', // studio (brand-poster) | social (Talking Brand / IG house style)
   logo:'main',   // main | ring | off  (ported from Deck Studio)
   safe:false,
   swipeCue:true, // show the "Swipe to read" prompt on a carousel cover
@@ -459,7 +464,7 @@ function bodyLines(text, boxW, bFs, budgetH, lh=1.3){
   return bl;
 }
 
-const TEMPLATES = [
+const PACK_STUDIO = [
 {
   id:'statement', name:'Statement', desc:'Full-bleed sector colour with the headline as the hero. The flagship Influential poster look.',
   tip:'Best for a single strong message or announcement.',
@@ -775,6 +780,362 @@ const TEMPLATES = [
 }
 ];
 
+/* ============ Social pack helpers ============ */
+/* Devices pulled from @thisisinfluential + @talkingbrandinfluential: marker-highlight
+   boxes behind headline lines, the brand ring as data points on a rising line, halftone
+   duotone shapes, and hand-drawn doodle accents. */
+const SOC = { red:'#fe2458', yellow:'#f1e63f', navy:'#201747', cream:'#fbf7ef' };
+
+// the headline lines sitting inside one rounded marker panel: a single connected blob
+// with even padding all round, sized to the widest line (the signature highlight look)
+function markerLines(lines,x,y,fs,lh,boxFill,txtFill,anchor='start',charW=0.60){
+  if(!lines.length) return {svg:'',h:0};
+  const padX=fs*0.46, padTop=fs*0.30, padBot=fs*0.36, lineH=fs*lh, rx=fs*0.34;
+  let maxw=fs*0.5;
+  lines.forEach(ln=>{ maxw=Math.max(maxw,(ln.length)*fs*charW); });
+  const boxW=maxw+padX*2;
+  const textH=(lines.length-1)*lineH+fs;
+  const boxH=textH+padTop+padBot;
+  const bx = anchor==='mid' ? x-boxW/2 : anchor==='end' ? x-boxW : x;
+  let s=`<rect x="${bx.toFixed(1)}" y="${y.toFixed(1)}" width="${boxW.toFixed(1)}" height="${boxH.toFixed(1)}" rx="${rx.toFixed(1)}" fill="${boxFill}"/>`;
+  lines.forEach((ln,i)=>{
+    const baseY=y+padTop+fs*0.80+i*lineH;
+    const tx = anchor==='mid' ? bx+boxW/2 : anchor==='end' ? bx+boxW-padX : bx+padX;
+    const ta = anchor==='mid'?'middle':anchor==='end'?'end':'start';
+    s+=`<text x="${tx.toFixed(1)}" y="${baseY.toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${txtFill}" font-weight="900" text-anchor="${ta}" letter-spacing="${(-fs*0.02).toFixed(2)}">${esc(ln)}</text>`;
+  });
+  return {svg:s, h:boxH};
+}
+// a single pill label, e.g. the kicker as "MEET THE TEAM" / "6 REASONS"
+function markerTag(text,x,y,fs,boxFill,txtFill,anchor='start'){
+  if(!text) return '';
+  const padX=fs*0.42, padY=fs*0.26, tw=text.length*fs*0.62;
+  const bx = anchor==='end' ? x-tw-padX*2 : x;
+  return `<rect x="${bx.toFixed(1)}" y="${y.toFixed(1)}" width="${(tw+padX*2).toFixed(1)}" height="${(fs+padY*2).toFixed(1)}" rx="${(fs*0.16).toFixed(1)}" fill="${boxFill}"/>`+
+    `<text x="${(bx+padX).toFixed(1)}" y="${(y+fs*0.82+padY).toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${txtFill}" font-weight="800" letter-spacing="${(fs*0.04).toFixed(2)}">${esc(text.toUpperCase())}</text>`;
+}
+// burst of light rays around a point (used around lightbulb / hero motif)
+function doodleRays(cx,cy,r,color,op=0.9,n=9){
+  let s='';
+  for(let k=0;k<n;k++){ const a=(k/n)*Math.PI*2-0.3;
+    const x1=cx+Math.cos(a)*r, y1=cy+Math.sin(a)*r, x2=cx+Math.cos(a)*r*1.55, y2=cy+Math.sin(a)*r*1.55;
+    s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${Math.max(2,r*0.09).toFixed(1)}" stroke-linecap="round" opacity="${op}"/>`; }
+  return s;
+}
+// a rough hand-drawn lightning bolt
+function doodleBolt(cx,cy,h,color,op=1){
+  const w=h*0.52;
+  return `<path d="M ${(cx+w*0.18).toFixed(1)} ${(cy-h/2).toFixed(1)} L ${(cx-w*0.5).toFixed(1)} ${(cy+h*0.08).toFixed(1)} L ${(cx-w*0.04).toFixed(1)} ${(cy+h*0.08).toFixed(1)} L ${(cx-w*0.4).toFixed(1)} ${(cy+h/2).toFixed(1)} L ${(cx+w*0.5).toFixed(1)} ${(cy-h*0.1).toFixed(1)} L ${(cx+w*0.02).toFixed(1)} ${(cy-h*0.1).toFixed(1)} Z" fill="${color}" opacity="${op}"/>`;
+}
+// a marker scribble underline
+function doodleScribble(x,y,w,color,op=1){
+  const seg=w/6; let d=`M ${x.toFixed(1)} ${y.toFixed(1)}`;
+  for(let k=1;k<=6;k++){ d+=` Q ${(x+seg*(k-0.5)).toFixed(1)} ${(y+(k%2?-1:1)*w*0.05).toFixed(1)}, ${(x+seg*k).toFixed(1)} ${y.toFixed(1)}`; }
+  return `<path d="${d}" stroke="${color}" stroke-width="${Math.max(3,w*0.028).toFixed(1)}" fill="none" stroke-linecap="round" opacity="${op}"/>`;
+}
+// a circle filled with a halftone dot screen (the duotone-cutout texture)
+function halftoneCircle(seed,cx,cy,r,color,op=0.9){
+  const dot=r*0.052, gap=dot*2.7, id='ht'+seed;
+  return `<defs><pattern id="${id}" width="${gap.toFixed(2)}" height="${gap.toFixed(2)}" patternUnits="userSpaceOnUse"><circle cx="${(gap/2).toFixed(2)}" cy="${(gap/2).toFixed(2)}" r="${dot.toFixed(2)}" fill="${color}"/></pattern><clipPath id="${id}c"><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}"/></clipPath></defs>`+
+    `<rect x="${(cx-r).toFixed(1)}" y="${(cy-r).toFixed(1)}" width="${(r*2).toFixed(1)}" height="${(r*2).toFixed(1)}" fill="url(#${id})" clip-path="url(#${id}c)" opacity="${op}"/>`;
+}
+// the brand ring climbing a hand-drawn rising line (growth / momentum)
+function risingLine(x0,y0,x1,y1,lineColor,ringColor,u,n=5){
+  let pts=[]; for(let k=0;k<n;k++){ const t=k/(n-1); const x=x0+(x1-x0)*t; const j=(k%2?-1:1)*(y0-y1)*0.05; pts.push([x, y0+(y1-y0)*t+j]); }
+  let d=`M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for(let k=1;k<n;k++) d+=` L ${pts[k][0].toFixed(1)} ${pts[k][1].toFixed(1)}`;
+  let s=`<path d="${d}" stroke="${lineColor}" stroke-width="${(u*0.013).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  pts.forEach(p=> s+=ring(p[0],p[1],u*0.052,ringColor,1));
+  return s;
+}
+// the small "ring + influential" lockup, bottom-left, honouring the Logo toggle
+function socLockup(x,y,w,onLight){
+  return logoTag(onLight?'nvy':'wht', x, y, w);
+}
+
+/* ============ Social pack templates ============ */
+const PACK_SOCIAL = [
+{
+  id:'highlight', name:'Highlight', desc:'Yellow ground with each headline line in its own marker-highlight box. The signature Talking Brand look.',
+  tip:'Best for a punchy, list-style or "X things" headline.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.yellow, box=S.accent, ink=inkOn(box);
+    const m=Math.round(W*0.075);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    if(iv) s+=bigNum(si, W-m, m+u*0.05, u*0.16, S.accent, 0.9, 'end');
+    let y=m;
+    const kFs=u*0.026;
+    if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.85, kFs, BRAND.navy); y+=kFs*2.1; }
+    const footTop=H-m-(c.cta?ctaH+gap:0)-u*0.085;
+    const head=fitHead(c.head, W-2*m-u*0.16, (footTop-y)*(c.body?0.66:0.92), iv?u*0.066:u*0.092, u*0.04, 0.60, 1.34);
+    const mk=markerLines(head.lines, m, y, head.fs, 1.34, box, ink, 'start');
+    s+=mk.svg; y+=mk.h+head.fs*0.45;
+    if(c.body){
+      const bFs=head.fs*0.5;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, footTop-y), m, y, bFs, 1.3, BRAND.navy, 600, 'start', -0.003);
+    }
+    s+=doodleScribble(m, H-m-u*0.105, u*0.18, S.accent, 0.9);
+    s+=socLockup(m, H-m-u*0.07, u*0.20, true);
+    if(c.cta){ s+=ctaPill(c.cta, W-m, H-m-ctaH, ctaH, BRAND.navy, '#ffffff', 'middle'); }
+    return s;
+  }
+},
+{
+  id:'banner', name:'Banner', desc:'A bold label tag over a big headline on the sector colour. The "6 reasons why" / announcement format.',
+  tip:'Use the kicker as the label (e.g. "6 REASONS", "MEET THE TEAM").',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=S.accent, ink=inkOn(bg), tagBg=ink===BRAND.navy?BRAND.navy:'#ffffff', tagInk=ink===BRAND.navy?'#ffffff':BRAND.navy;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=halftoneCircle(uid*7+1, W*0.86, H*0.9, u*0.26, mix(bg,BRAND.navy,0.4), 0.5);
+    s+=doodleRays(W*0.86, H*0.16, u*0.07, ink, 0.7, 10);
+    if(iv) s+=bigNum(si, m, H-m-u*0.04, u*0.20, ink, 0.16, 'start');
+    let y=m;
+    const tFs=u*0.03;
+    s+=markerTag(c.kicker||'INFLUENTIAL', m, y, tFs, tagBg, tagInk); y+=tFs*1.9;
+    const footTop=H-m-(c.cta?ctaH+gap:0)-u*0.08;
+    const head=fitHead(c.head, W-2*m, (footTop-y)*(c.body?0.66:0.94), iv?u*0.07:u*0.11, u*0.045, 0.54, 1.0);
+    s+=tblock(head.lines, m, y, head.fs, head.lh, ink, 900, 'start', -0.025);
+    y+=head.lines.length*head.fs*head.lh+head.fs*0.5;
+    if(c.body){
+      const bFs=head.fs*0.5, bodyInk=ink===BRAND.navy?mix(BRAND.navy,'#ffffff',0.18):mix('#ffffff',bg,0.12);
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, footTop-y), m, y, bFs, 1.3, bodyInk, 600, 'start', -0.003);
+    }
+    s+=socLockup(m, H-m-u*0.07, u*0.20, ink===BRAND.navy);
+    if(c.cta){ s+=ctaPill(c.cta, W-m, H-m-ctaH, ctaH, tagBg, tagInk, 'middle'); }
+    return s;
+  }
+},
+{
+  id:'growth', name:'Growth Line', desc:'A statement on yellow with the brand ring climbing a hand-drawn rising line. Built on the momentum idea.',
+  tip:'Great for a confident one-liner about results or progress.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.yellow;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    let y=m;
+    s+=socLockup(m, y, u*0.22, true); y+=u*0.22/LOGO_AR+u*0.05;
+    const kFs=u*0.025;
+    if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.85, kFs, S.accent); y+=kFs*2.0; }
+    if(iv) s+=bigNum(si, W-m, m+u*0.04, u*0.16, S.accent, 0.85, 'end');
+    const headBudget=(H*0.5 - y);
+    const head=fitHead(c.head, W-2*m, headBudget*0.9, iv?u*0.06:u*0.082, u*0.04, 0.53, 1.04);
+    s+=tblock(head.lines, m, y, head.fs, head.lh, BRAND.navy, 900, 'start', -0.02);
+    y+=head.lines.length*head.fs*head.lh+head.fs*0.4;
+    if(c.body){
+      const bFs=head.fs*0.5;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, u*0.12), m, y, bFs, 1.3, mix(BRAND.navy,'#ffffff',0.15), 700, 'start', -0.003);
+    }
+    // rising line across the lower third
+    s+=risingLine(m, H-m-u*0.10, W-m, H*0.56, BRAND.navy, S.accent, u, 5);
+    if(c.cta){ s+=ctaPill(c.cta, W-m, H-m-ctaH, ctaH, BRAND.navy, '#ffffff', 'middle'); }
+    return s;
+  }
+},
+{
+  id:'pullquote', name:'Pull Quote', desc:'An oversized quote in marker boxes on a bold red ground, with attribution. Editorial and human.',
+  tip:'Put the quote in the headline and the speaker in the supporting line.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=SOC.red, box='#ffffff', ink=BRAND.navy;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=`<text x="${m}" y="${(m+u*0.18).toFixed(0)}" font-size="${(u*0.26).toFixed(0)}" fill="#ffffff" fill-opacity="0.9" font-weight="900">&#8220;</text>`;
+    if(iv) s+=bigNum(si, W-m, m+u*0.05, u*0.16, '#ffffff', 0.4, 'end');
+    let y=m+u*0.17;
+    const footTop=H-m-(c.cta?ctaH+gap:0)-u*0.10;
+    const head=fitHead(c.head, W-2*m-u*0.14, (footTop-y)*0.9, iv?u*0.058:u*0.078, u*0.038, 0.60, 1.36);
+    const mk=markerLines(head.lines, m, y, head.fs, 1.36, box, ink, 'start');
+    s+=mk.svg; y+=mk.h+head.fs*0.5;
+    if(c.body){
+      const bFs=Math.max(u*0.026, head.fs*0.42);
+      s+=`<rect x="${m}" y="${y.toFixed(0)}" width="${(u*0.09).toFixed(0)}" height="${Math.max(4,u*0.008).toFixed(0)}" rx="2" fill="${BRAND.yellow}"/>`;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, u*0.16), m, y+bFs*0.9, bFs, 1.28, BRAND.yellow, 800, 'start', 0.02);
+    }
+    s+=socLockup(m, H-m-u*0.065, u*0.19, false);
+    if(c.cta){ s+=ctaPill(c.cta, W-m, H-m-ctaH, ctaH, BRAND.yellow, BRAND.navy, 'middle'); }
+    return s;
+  }
+},
+{
+  id:'feature', name:'Feature', desc:'A dark ground with a highlight tag, a name-sized headline and a muted sub-line. The "meet the team" / profile card.',
+  tip:'Tag in the kicker, the name or topic in the headline, the role in the supporting line.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.navy;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=halftoneCircle(uid*7+2, W*0.82, H*0.32, u*0.30, mix(BRAND.navy,S.accent,0.55), 0.7);
+    s+=ring(W*0.82, H*0.32, u*0.16, S.accent, 0.9);
+    if(iv) s+=bigNum(si, m, m+u*0.04, u*0.16, S.accent, 0.5, 'start');
+    let y=m;
+    const tFs=u*0.028;
+    s+=markerTag(c.kicker||'FEATURE', m, y, tFs, S.accent, inkOn(S.accent)); y+=tFs*2.2;
+    const footTop=H-m-(c.cta?ctaH+gap:0)-u*0.09;
+    const head=fitHead(c.head, W*0.62, (footTop-y)*(c.body?0.6:0.9), iv?u*0.066:u*0.094, u*0.04, 0.54, 1.02);
+    s+=tblock(head.lines, m, y, head.fs, head.lh, '#ffffff', 900, 'start', -0.02);
+    y+=head.lines.length*head.fs*head.lh+head.fs*0.45;
+    if(c.body){
+      const bFs=Math.max(u*0.024, head.fs*0.42);
+      s+=tblock(bodyLines(c.body, W*0.62, bFs, u*0.16), m, y, bFs, 1.32, mix('#ffffff',BRAND.navy,0.35), 700, 'start', 0.04);
+    }
+    s+=socLockup(m, H-m-u*0.065, u*0.19, false);
+    if(c.cta){ s+=ctaPill(c.cta, W-m, H-m-ctaH, ctaH, S.accent, inkOn(S.accent), 'middle'); }
+    return s;
+  }
+},
+{
+  id:'band', name:'Band', desc:'A cream band carrying the headline across a sector-colour ground, with a halftone corner. Gallery-poster feel.',
+  tip:'Best for a clear statement or topic title.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=S.accent, ink=inkOn(bg);
+    const m=Math.round(W*0.07);
+    const ctaH=u*0.058, gap=u*0.024;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=halftoneCircle(uid*7+3, W*0.12, H*0.12, u*0.22, mix(bg,BRAND.navy,0.45), 0.55);
+    let y=m;
+    s+=socLockup(m, y, u*0.21, ink===BRAND.navy);
+    const kFs=u*0.026;
+    if(c.kicker){ s+=kickerTag(c.kicker, W-m, m+kFs*0.85, kFs, ink, 'end'); }
+    // the cream band
+    const bandPadY=u*0.06;
+    const head=fitHead(c.head, W-2*m-u*0.06, iv?u*0.30:u*0.40, iv?u*0.066:u*0.092, u*0.045, 0.55, 1.05);
+    const headH=head.lines.length*head.fs*head.lh;
+    const bandH=headH+bandPadY*2;
+    const bandY=H*0.5 - bandH/2 + u*0.02;
+    s+=`<rect x="0" y="${bandY.toFixed(1)}" width="${W}" height="${bandH.toFixed(1)}" fill="${BRAND.cream}"/>`;
+    s+=tblock(head.lines, m, bandY+bandPadY, head.fs, head.lh, BRAND.navy, 900, 'start', -0.02);
+    if(iv) s+=bigNum(si, W-m, bandY+bandPadY+head.fs*0.8, head.fs, S.accent, 0.9, 'end');
+    let by=bandY+bandH+u*0.05;
+    if(c.body){
+      const bFs=u*0.03;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, u*0.14), m, by, bFs, 1.3, ink===BRAND.navy?mix(BRAND.navy,'#ffffff',0.15):'#ffffff', 600, 'start', -0.003);
+    }
+    s+=doodleBolt(W-m-u*0.05, bandY-u*0.08, u*0.12, BRAND.navy, 0.9);
+    if(c.cta){ s+=ctaPill(c.cta, m, H-m-ctaH, ctaH, BRAND.navy, '#ffffff'); }
+    return s;
+  }
+},
+{
+  id:'announce', name:'Announcement', desc:'Big quiet caps on navy with a lightning doodle and halftone shape. The "we’ve been shortlisted" moment.',
+  tip:'Best for news: an award, a launch, a milestone.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.navy;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.06, gap=u*0.026;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=halftoneCircle(uid*7+4, W*0.72, H*0.74, u*0.34, mix(BRAND.navy,'#ffffff',0.18), 0.6);
+    s+=doodleBolt(W*0.30, H*0.7, u*0.22, BRAND.yellow, 1);
+    if(iv) s+=bigNum(si, W-m, m+u*0.04, u*0.16, S.accent, 0.6, 'end');
+    let y=m;
+    s+=socLockup(m, y, u*0.22, false); y+=u*0.22/LOGO_AR+u*0.06;
+    const kFs=u*0.026;
+    if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.85, kFs, S.accent); y+=kFs*2.1; }
+    const head=fitHead((c.head||'').toUpperCase(), W-2*m, (H*0.52-y), iv?u*0.07:u*0.1, u*0.045, 0.56, 1.04);
+    s+=tblock(head.lines, m, y, head.fs, head.lh, mix('#ffffff',BRAND.navy,0.12), 900, 'start', -0.01);
+    y+=head.lines.length*head.fs*head.lh+head.fs*0.45;
+    if(c.body){
+      const bFs=head.fs*0.5;
+      s+=tblock(bodyLines(c.body, W*0.7, bFs, u*0.16), m, y, bFs, 1.32, mix('#ffffff',BRAND.navy,0.3), 600, 'start', -0.003);
+    }
+    if(c.cta){ s+=ctaPill(c.cta, m, H-m-ctaH, ctaH, BRAND.yellow, BRAND.navy); }
+    return s;
+  }
+},
+{
+  id:'listicle', name:'Listicle', desc:'Turns the supporting line into clean ring-bullet points on cream. The carousel-inner workhorse.',
+  tip:'Put one point per sentence in the supporting line; they become a ranked list.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.cream;
+    const m=Math.round(W*0.08);
+    const ctaH=u*0.058, gap=u*0.024;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    if(iv) s+=bigNum(si, W-m, m+u*0.04, u*0.16, S.accent, 0.6, 'end');
+    let y=m;
+    s+=socLockup(m, y, u*0.21, true); y+=u*0.21/LOGO_AR+u*0.05;
+    const kFs=u*0.026;
+    if(c.kicker){ s+=kickerTag(c.kicker, m, y, kFs, S.accent, inkOn(S.accent)); y+=kFs*2.2; }
+    const head=fitHead(c.head, W-2*m, u*0.24, iv?u*0.05:u*0.07, u*0.038, 0.54, 1.04);
+    s+=tblock(head.lines, m, y, head.fs, head.lh, BRAND.navy, 900, 'start', -0.02);
+    y+=head.lines.length*head.fs*head.lh+head.fs*0.7;
+    // points from the body, split on sentence enders
+    const pts=(c.body||'').split(/(?<=[.!?])\s+|\s*[•|]\s*|\n+/).map(t=>t.trim()).filter(Boolean).slice(0,5);
+    // even rows that fill the space, so the rhythm is consistent however many points there are
+    const listTop=y, listBot=H-m-(c.cta?ctaH+gap:0)-u*0.01;
+    const rowH=(listBot-listTop)/Math.max(1,pts.length);
+    const pFs=Math.min(u*0.034, rowH*0.30);
+    const rr=pFs*0.78;                       // number ring radius
+    const tx=m+rr*2+pFs*0.85;                // text starts clear of the ring
+    const divCol=mix(BRAND.navy,bg,0.80);
+    pts.forEach((pt,i)=>{
+      const rowTop=listTop+i*rowH, cy=rowTop+rowH*0.5;
+      if(i>0) s+=`<line x1="${m}" y1="${rowTop.toFixed(1)}" x2="${(W-m).toFixed(1)}" y2="${rowTop.toFixed(1)}" stroke="${divCol}" stroke-width="1.5"/>`;
+      s+=ring(m+rr, cy, rr, S.accent, 1);
+      s+=`<text x="${(m+rr).toFixed(1)}" y="${(cy+pFs*0.34).toFixed(1)}" font-size="${(pFs*0.82).toFixed(1)}" fill="${BRAND.navy}" font-weight="900" text-anchor="middle">${i+1}</text>`;
+      const lines=wrapWords(pt, Math.floor((W-m-tx)/(pFs*0.52))).slice(0,2);
+      const ty=cy - pFs*0.45 - (lines.length-1)*pFs*1.18/2;
+      s+=tblock(lines, tx, ty, pFs*0.92, 1.18, BRAND.navy, 600, 'start', -0.005);
+    });
+    if(c.cta){ s+=ctaPill(c.cta, m, H-m-ctaH, ctaH, S.accent, inkOn(S.accent)); }
+    return s;
+  }
+},
+{
+  id:'collage', name:'Collage', desc:'Editorial halftone collage on navy with the headline on a cream band. The cut-out, magazine-cover energy.',
+  tip:'Best for a bold idea or campaign line.',
+  render(ctx){
+    const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    const bg=BRAND.navy;
+    const m=Math.round(W*0.07);
+    const ctaH=u*0.058, gap=u*0.024;
+    let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
+    s+=halftoneCircle(uid*7+5, W*0.26, H*0.24, u*0.20, BRAND.yellow, 0.85);
+    s+=halftoneCircle(uid*7+6, W*0.78, H*0.2, u*0.15, S.accent, 0.85);
+    s+=ring(W*0.5, H*0.27, u*0.1, BRAND.yellow, 0.8);
+    s+=doodleRays(W*0.78, H*0.2, u*0.14, '#ffffff', 0.5, 11);
+    let y=m;
+    s+=socLockup(m, y, u*0.21, false);
+    if(iv) s+=bigNum(si, W-m, m+u*0.04, u*0.16, BRAND.yellow, 0.7, 'end');
+    // cream headline band lower half
+    const head=fitHead(c.head, W-2*m-u*0.04, iv?u*0.26:u*0.34, iv?u*0.064:u*0.088, u*0.044, 0.55, 1.04);
+    const headH=head.lines.length*head.fs*head.lh;
+    const bandPadY=u*0.055, bandH=headH+bandPadY*2 + (c.kicker?u*0.05:0);
+    const bandY=H-m-bandH-(c.cta?ctaH+gap:0);
+    s+=`<rect x="0" y="${bandY.toFixed(1)}" width="${W}" height="${bandH.toFixed(1)}" fill="${BRAND.cream}"/>`;
+    let ty=bandY+bandPadY;
+    const kFs=u*0.024;
+    if(c.kicker){ s+=kickerTag(c.kicker, m, ty+kFs*0.85, kFs, S.accent); ty+=kFs*1.9; }
+    s+=tblock(head.lines, m, ty, head.fs, head.lh, BRAND.navy, 900, 'start', -0.02);
+    if(c.cta){ s+=ctaPill(c.cta, m, H-m-ctaH, ctaH, BRAND.yellow, BRAND.navy); }
+    return s;
+  }
+}
+];
+
+/* The two style packs the gallery can switch between */
+const PACKS = { studio: PACK_STUDIO, social: PACK_SOCIAL };
+let TEMPLATES = PACKS[state.pack] || PACK_STUDIO;
+
 /* ============ Build SVG string ============ */
 let UID=0;
 // copy/variant/slide are optional. They default to the active post as a single cover,
@@ -910,6 +1271,20 @@ function renderLogoMode(){
     b.className=(L.id===state.logo?'on':'');
     b.innerHTML=`${L.name}<span class="sub">${L.sub}</span>`;
     b.onclick=()=>{ state.logo=L.id; renderLogoMode(); renderGallery(); };
+    el.appendChild(b);
+  });
+}
+const PACK_MODES=[
+  {id:'studio',name:'Studio',  sub:'Brand poster'},
+  {id:'social',name:'Social',  sub:'IG house style'},
+];
+function renderPackMode(){
+  const el=document.getElementById('packMode'); el.innerHTML='';
+  PACK_MODES.forEach(K=>{
+    const b=document.createElement('button');
+    b.className=(K.id===state.pack?'on':'');
+    b.innerHTML=`${K.name}<span class="sub">${K.sub}</span>`;
+    b.onclick=()=>{ state.pack=K.id; TEMPLATES=PACKS[K.id]||PACK_STUDIO; renderPackMode(); renderGallery(); };
     el.appendChild(b);
   });
 }
@@ -1055,7 +1430,7 @@ swt.onclick=toggleSwipe;
 swt.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSwipe(); } };
 
 /* ============ Studio Autofill: load from link / import ============ */
-function renderAll(){ renderSectors(); renderPlacements(); renderLogoMode(); renderGallery(); }
+function renderAll(){ renderPackMode(); renderSectors(); renderPlacements(); renderLogoMode(); renderGallery(); }
 function syncInputs(){
   document.getElementById('i_kicker').value = state.c.kicker||'';
   document.getElementById('i_head').value   = state.c.head||'';
@@ -1072,6 +1447,7 @@ function loadState(p){
   if(p.sector && SECTORS.some(s=>s.id===p.sector)) state.sector=p.sector;
   if(p.placement && PLACEMENTS.some(x=>x.id===p.placement)) state.placement=p.placement;
   if(p.logo && ['main','ring','off'].includes(p.logo)) state.logo=p.logo;
+  if(p.pack && PACKS[p.pack]){ state.pack=p.pack; TEMPLATES=PACKS[p.pack]; }
   // v2 carries an array of posts; v1 carries a single `c`. Both normalise to posts[].
   let posts=[];
   if(Array.isArray(p.posts)) posts=p.posts.map(cleanPost);
@@ -1081,14 +1457,14 @@ function loadState(p){
   syncInputs(); renderAll();
 }
 function currentPayload(){
-  return { v:2, tool:'post-studio', sector:state.sector, placement:state.placement, logo:state.logo,
+  return { v:2, tool:'post-studio', sector:state.sector, placement:state.placement, pack:state.pack, logo:state.logo,
            posts: state.posts.map(p=>({ kicker:p.kicker, head:p.head, body:p.body, cta:p.cta })) };
 }
 function b64urlEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return JSON.parse(decodeURIComponent(escape(atob(s)))); }
 
 /* init */
-renderSectors(); renderPlacements(); renderLogoMode(); renderGallery();
+renderPackMode(); renderSectors(); renderPlacements(); renderLogoMode(); renderGallery();
 
 /* load from a #d= link on open (falls back silently to the starter content) */
 if((location.hash||'').startsWith('#d=')){

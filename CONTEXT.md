@@ -39,6 +39,16 @@ all the other artefacts).
 - **v3 (2026-06-17):** per Shea, replaced all spheres with the **brand ring** (the Secondary Icon,
   inner/outer 0.59) and converted the soft background blooms to faint partial rings, so the whole
   tool speaks the brand's circle language. Reusable ring assets in `Assets/logos/ring/`.
+- **v4 (2026-06-19):** added a second **style pack** and a Studio/Social toggle in the sidebar.
+  The original 9 (now **PACK_STUDIO**, "Brand poster") stay as-is. **PACK_SOCIAL** ("IG house
+  style") is 9 new layouts reverse-engineered from the actual @thisisinfluential and
+  @talkingbrandinfluential feeds: Highlight, Banner, Growth Line, Pull Quote, Feature, Band,
+  Announcement, Listicle, Collage. House devices added as reusable helpers: marker-highlight
+  boxes behind headline lines, the ring as data points climbing a hand-drawn rising line,
+  halftone duotone circles, and doodle accents (light rays, lightning bolt, marker scribble).
+  Grounds rotate brand yellow/red/navy/cream; the **sector accent drives the highlights/rings**
+  so the department still reads. The chosen pack rides along in the `#d=` share link (`pack`
+  field, studio|social) and in Import/Export.
 
 ## Status
 
