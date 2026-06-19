@@ -64,6 +64,7 @@
   .seg .sub{display:block;font-size:10.5px;font-weight:700;opacity:.6;margin-top:1px}
   .seg button.on .sub{opacity:.7}
   .shareRow{display:flex;gap:8px}
+  .shareRow .shareBtn{flex:1 1 0;min-width:0}
   .shareBtn{flex:1 1 auto;border:1.5px solid var(--line);background:var(--soft);color:var(--navy);border-radius:999px;
     padding:11px 14px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;transition:.14s;display:inline-flex;align-items:center;justify-content:center;gap:7px}
   .shareBtn:hover{border-color:#cfc9e0}
@@ -1147,36 +1148,12 @@ function bigNum(idx, x, y, fs, colour, op=1, anchor='start'){
     fill-opacity="${op}" font-weight="900" letter-spacing="${(-fs*0.04).toFixed(1)}" text-anchor="${anchor}">${String(idx+1).padStart(2,'0')}</text>`;
 }
 
-// The progress chip: a bottom-centred dot row plus a counter. Shown on every slide of a
-// carousel so position is always clear. Legible on any template background via the light chip.
+// The slide-position chip (dots + "01 / 05" counter) used to be baked onto every carousel
+// slide. Removed per Shea: it blocked the preview, the filmstrip already shows the slide
+// numbers, and Instagram renders its own dots on the real post. Kept as a no-op so the call
+// sites stay untouched.
 function slideFurniture(P,S,variant,slide){
-  if(!slide || slide.count<2) return '';
-  const W=P.w, H=P.h, u=Math.min(W,H);
-  const n=slide.count, i=slide.index;
-  const r=u*0.011, gap=u*0.034;                     // dot radius + spacing
-  const counter=`${String(i+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}`;
-  const cFs=u*0.026;
-  const dotsW=(n-1)*gap;
-  const padX=u*0.034, mid=u*0.014;
-  const counterW=counter.length*cFs*0.58;
-  const chipW = padX*2 + dotsW + mid + counterW;
-  const chipH = u*0.066;
-  const cx = W/2, cy = H - u*0.05 - chipH/2;
-  const x0 = cx - chipW/2;
-  let s = `<g>
-    <rect x="${(x0).toFixed(1)}" y="${(cy-chipH/2).toFixed(1)}" width="${chipW.toFixed(1)}" height="${chipH.toFixed(1)}"
-      rx="${(chipH/2).toFixed(1)}" fill="#ffffff" fill-opacity="0.94" stroke="${BRAND.navy}" stroke-opacity="0.14" stroke-width="${(u*0.003).toFixed(1)}"/>`;
-  let dx = x0 + padX + r;
-  for(let k=0;k<n;k++){
-    const on = k===i;
-    s += `<circle cx="${dx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(on?r*1.15:r*0.78).toFixed(1)}"
-      fill="${on?S.accent:BRAND.navy}" fill-opacity="${on?1:0.22}"/>`;
-    dx += gap;
-  }
-  const tx = x0 + padX + dotsW + mid;
-  s += `<text x="${tx.toFixed(1)}" y="${(cy+cFs*0.34).toFixed(1)}" font-size="${cFs.toFixed(1)}"
-      fill="${BRAND.navy}" font-weight="800" letter-spacing="${(cFs*0.04).toFixed(2)}">${counter}</text>`;
-  return s+`</g>`;
+  return '';
 }
 
 // Per-template swipe placement + tone, so the cue sits where each cover has room and always
@@ -1211,7 +1188,7 @@ function swipePrompt(tpl,P,S,variant,slide){
   else if(cfg.tone==='accent'){ fill=S.accent; ink=inkOn(S.accent); }
   else if(cfg.tone==='cream'){ fill=BRAND.cream; ink=BRAND.navy; }
   else { fill=BRAND.navy; ink='#ffffff'; }
-  const yAbove = H - u*0.05 - u*0.066 - u*0.03 - h;   // clear of the dots chip
+  const yAbove = H - u*0.05 - h;   // sits at the bottom margin (dots chip removed)
   let x,anchor;
   if(cfg.pos==='bl'){ x=mm; anchor='start'; }
   else if(cfg.pos==='br'){ x=W-mm; anchor='end'; }
@@ -1464,27 +1441,69 @@ function currentPayload(){
 function b64urlEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return JSON.parse(decodeURIComponent(escape(atob(s)))); }
 
+// Shorter links: deflate-compress the JSON and carry it as "#z=" (roughly half the length of
+// the old plain "#d=" blob). Old "#d=" links and bare JSON still load. The Python autofill
+// snippet writes "#z=" using zlib, which is the same deflate format DecompressionStream reads.
+function bytesToB64url(bytes){ let bin=''; for(const b of bytes) bin+=String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64urlToBytes(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='=';
+  const bin=atob(s), out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }
+async function encodeShareFragment(obj){
+  const json=JSON.stringify(obj);
+  if(typeof CompressionStream==='function'){
+    try{
+      const cs=new CompressionStream('deflate'); const w=cs.writable.getWriter();
+      w.write(new TextEncoder().encode(json)); w.close();
+      const buf=await new Response(cs.readable).arrayBuffer();
+      return 'z='+bytesToB64url(new Uint8Array(buf));
+    }catch(e){ /* fall back to plain below */ }
+  }
+  return 'd='+b64urlEncode(obj);
+}
+async function decodeShareFragment(frag){
+  if(frag.startsWith('z=')){
+    const ds=new DecompressionStream('deflate'); const w=ds.writable.getWriter();
+    w.write(b64urlToBytes(frag.slice(2))); w.close();
+    const buf=await new Response(ds.readable).arrayBuffer();
+    return JSON.parse(new TextDecoder().decode(buf));
+  }
+  if(frag.startsWith('d=')) return b64urlDecode(frag.slice(2));
+  throw new Error('unrecognised link');
+}
+// pull a sharable payload out of whatever the user pasted (full URL, bare fragment, or raw JSON)
+async function decodeFromText(raw){
+  raw=raw.trim();
+  if(raw[0]==='{') return JSON.parse(raw);
+  const m=raw.match(/#([zd]=[^#\s]+)/);
+  if(m) return decodeShareFragment(m[1]);
+  if(/^[zd]=/.test(raw)) return decodeShareFragment(raw);
+  return b64urlDecode(raw); // legacy: a bare base64url JSON blob
+}
+
 /* init */
 renderPackMode(); renderSectors(); renderPlacements(); renderLogoMode(); renderGallery();
 
-/* load from a #d= link on open (falls back silently to the starter content) */
-if((location.hash||'').startsWith('#d=')){
-  try{ loadState(b64urlDecode(location.hash.slice(3))); }
-  catch(e){ console.warn('Studio link could not be read:', e.message); }
-}
+/* load from a #z= / #d= link on open (falls back silently to the starter content) */
+(async ()=>{
+  const h=location.hash||'';
+  if(h.startsWith('#z=')||h.startsWith('#d=')){
+    try{ loadState(await decodeShareFragment(h.slice(1))); }
+    catch(e){ console.warn('Studio link could not be read:', e.message); }
+  }
+})();
 
 /* share controls */
 document.getElementById('copyLink').onclick=async function(){
-  const url=location.origin+location.pathname+'#d='+b64urlEncode(currentPayload());
+  const url=location.origin+location.pathname+'#'+await encodeShareFragment(currentPayload());
   try{ await navigator.clipboard.writeText(url); }
   catch(e){ const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
   const o=this.textContent; this.textContent='Link copied'; setTimeout(()=>this.textContent=o,1400);
 };
 const importBox=document.getElementById('importBox');
 document.getElementById('importBtn').onclick=()=>{ importBox.hidden=!importBox.hidden; if(!importBox.hidden) document.getElementById('importText').focus(); };
-document.getElementById('importLoad').onclick=function(){
+document.getElementById('importLoad').onclick=async function(){
   const raw=document.getElementById('importText').value.trim(); if(!raw) return;
-  try{ loadState(raw[0]==='{' ? JSON.parse(raw) : b64urlDecode(raw.replace(/^[\s\S]*#d=/,''))); importBox.hidden=true; }
+  try{ loadState(await decodeFromText(raw)); importBox.hidden=true; }
   catch(e){ alert('Could not read that: '+e.message); }
 };
 </script>
