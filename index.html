@@ -63,6 +63,16 @@
   .seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
   .seg .sub{display:block;font-size:10.5px;font-weight:700;opacity:.6;margin-top:1px}
   .seg button.on .sub{opacity:.7}
+  .shareRow{display:flex;gap:8px}
+  .shareBtn{flex:1 1 auto;border:1.5px solid var(--line);background:var(--soft);color:var(--navy);border-radius:999px;
+    padding:11px 14px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;transition:.14s;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .shareBtn:hover{border-color:#cfc9e0}
+  .shareBtn:active{transform:scale(.96)}
+  .shareBtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .shareBtn.primary:hover{background:#150f30}
+  .importBox{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .importBox textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;font-size:13px;color:var(--navy);background:var(--soft);resize:vertical}
+  .importBox textarea:focus{outline:none;border-color:var(--navy);background:#fff}
 
   /* toggle row */
   .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--soft);
@@ -169,6 +179,16 @@
       <div class="toggle" id="safeToggle" role="switch" tabindex="0">
         <div class="lab">Show safe zones <small>Keeps copy clear of crop & UI</small></div>
         <div class="switch"></div>
+      </div>
+
+      <h2>Studio link</h2>
+      <div class="shareRow">
+        <button class="shareBtn primary" id="copyLink">Copy share link</button>
+        <button class="shareBtn" id="importBtn">Import</button>
+      </div>
+      <div class="importBox" id="importBox" hidden>
+        <textarea id="importText" rows="4" placeholder="Paste a Post Studio link or payload"></textarea>
+        <button class="shareBtn primary" id="importLoad">Load it</button>
       </div>
     </aside>
 
@@ -778,8 +798,52 @@ function toggleSafe(){ state.safe=!state.safe; st.classList.toggle('on',state.sa
 st.onclick=toggleSafe;
 st.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSafe(); } };
 
+/* ============ Studio Autofill: load from link / import ============ */
+function renderAll(){ renderSectors(); renderPlacements(); renderLogoMode(); renderGallery(); }
+function syncInputs(){
+  document.getElementById('i_kicker').value = state.c.kicker||'';
+  document.getElementById('i_head').value   = state.c.head||'';
+  document.getElementById('i_body').value   = state.c.body||'';
+  document.getElementById('i_cta').value    = state.c.cta||'';
+}
+function loadState(p){
+  if(!p || p.v!==1 || p.tool!=='post-studio') throw new Error('not a Post Studio payload');
+  if(p.sector && SECTORS.some(s=>s.id===p.sector)) state.sector=p.sector;
+  if(p.placement && PLACEMENTS.some(x=>x.id===p.placement)) state.placement=p.placement;
+  if(p.logo && ['main','ring','off'].includes(p.logo)) state.logo=p.logo;
+  if(p.c && typeof p.c==='object') ['kicker','head','body','cta'].forEach(k=>{ if(typeof p.c[k]==='string') state.c[k]=p.c[k]; });
+  syncInputs(); renderAll();
+}
+function currentPayload(){
+  return { v:1, tool:'post-studio', sector:state.sector, placement:state.placement, logo:state.logo,
+           c:{ kicker:state.c.kicker, head:state.c.head, body:state.c.body, cta:state.c.cta } };
+}
+function b64urlEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return JSON.parse(decodeURIComponent(escape(atob(s)))); }
+
 /* init */
 renderSectors(); renderPlacements(); renderLogoMode(); renderGallery();
+
+/* load from a #d= link on open (falls back silently to the starter content) */
+if((location.hash||'').startsWith('#d=')){
+  try{ loadState(b64urlDecode(location.hash.slice(3))); }
+  catch(e){ console.warn('Studio link could not be read:', e.message); }
+}
+
+/* share controls */
+document.getElementById('copyLink').onclick=async function(){
+  const url=location.origin+location.pathname+'#d='+b64urlEncode(currentPayload());
+  try{ await navigator.clipboard.writeText(url); }
+  catch(e){ const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  const o=this.textContent; this.textContent='Link copied'; setTimeout(()=>this.textContent=o,1400);
+};
+const importBox=document.getElementById('importBox');
+document.getElementById('importBtn').onclick=()=>{ importBox.hidden=!importBox.hidden; if(!importBox.hidden) document.getElementById('importText').focus(); };
+document.getElementById('importLoad').onclick=function(){
+  const raw=document.getElementById('importText').value.trim(); if(!raw) return;
+  try{ loadState(raw[0]==='{' ? JSON.parse(raw) : b64urlDecode(raw.replace(/^[\s\S]*#d=/,''))); importBox.hidden=true; }
+  catch(e){ alert('Could not read that: '+e.message); }
+};
 </script>
 </body>
 </html>
