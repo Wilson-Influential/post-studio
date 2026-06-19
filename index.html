@@ -135,22 +135,23 @@
   .note b{color:var(--charcoal)}
 
   /* carousel workspace */
-  .csheet{max-width:min(96vw,1040px)}
-  .chead{display:flex;align-items:center;gap:14px;margin:2px 40px 18px 0;flex-wrap:wrap}
+  .csheet{max-width:min(97vw,1180px);padding:22px 26px}
+  .chead{display:flex;align-items:center;gap:14px;margin:0 40px 16px 0;flex-wrap:wrap}
   .cbackBtn{border:1.5px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;
     padding:9px 15px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;transition:.14s}
   .cbackBtn:hover{background:var(--soft);border-color:#cfc9e0}
-  .ctitle{font-size:19px;font-weight:900;letter-spacing:-.4px;margin-right:auto}
-  .cdlAll{width:auto}
-  .cstage{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
-  .cbig{flex:1 1 340px;min-width:260px;max-width:440px}
-  .cbig .canvas{background:repeating-conic-gradient(#f0edf6 0% 25%,#f6f4fb 0% 50%) 50%/26px 26px;border-radius:12px;overflow:hidden}
+  .ctitle{font-size:19px;font-weight:900;letter-spacing:-.4px}
+  .chint{margin-left:auto;font-size:12px;font-weight:700;color:#9b97ac;letter-spacing:.2px}
+  .cstage{display:flex;gap:30px;flex-wrap:wrap;align-items:stretch}
+  .cbig{flex:2 1 460px;min-width:300px;max-width:600px;display:flex;align-items:center}
+  .cbig .canvas{width:100%;background:repeating-conic-gradient(#f0edf6 0% 25%,#f6f4fb 0% 50%) 50%/26px 26px;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px -36px rgba(32,23,71,.7)}
   .cbig svg{display:block;width:100%;height:auto}
-  .cedit{flex:1 1 280px;min-width:240px}
-  .cSlideLabel{font-size:14px;color:var(--charcoal);margin:2px 0 14px}
+  .cedit{flex:1 1 300px;min-width:250px;display:flex;flex-direction:column;justify-content:center}
+  .cSlideLabel{font-size:14px;color:var(--charcoal);margin:0 0 14px}
   .cSlideLabel b{color:var(--navy);font-weight:900}
-  .cedit .field{margin-bottom:13px}
-  .cDlOne{width:100%;justify-content:center;font-size:14px;padding:12px 18px;margin-top:4px}
+  .cedit .field{margin-bottom:12px}
+  .cDlRow{display:flex;gap:10px;margin-top:6px}
+  .cDlRow .dl{flex:1;justify-content:center;font-size:13.5px;padding:12px 12px}
   .cfilm{display:flex;gap:12px;overflow-x:auto;padding:20px 2px 4px;margin-top:8px;border-top:1px solid var(--line)}
   .cthumb{position:relative;flex:0 0 auto;width:96px;cursor:pointer;border-radius:10px;padding:5px;
     border:2px solid transparent;background:var(--soft);transition:.14s}
@@ -205,6 +206,10 @@
       <h2>Overlay</h2>
       <div class="toggle" id="safeToggle" role="switch" tabindex="0">
         <div class="lab">Show safe zones <small>Keeps copy clear of crop & UI</small></div>
+        <div class="switch"></div>
+      </div>
+      <div class="toggle on" id="swipeToggle" role="switch" tabindex="0">
+        <div class="lab">Swipe prompt <small>“Swipe to read” on a carousel cover</small></div>
         <div class="switch"></div>
       </div>
 
@@ -262,10 +267,7 @@
     <div class="chead">
       <button class="cbackBtn" id="cBack">← back to styles</button>
       <span class="ctitle" id="cTitle">Carousel</span>
-      <button class="dl primary cdlAll" id="cDlAll">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
-        Download all
-      </button>
+      <span class="chint">← → to step through slides</span>
     </div>
     <div class="cstage">
       <div class="cbig"><div class="canvas" id="cCanvas"></div></div>
@@ -275,10 +277,16 @@
         <div class="field"><label>Headline <span>the hero line</span></label><textarea id="c_head" rows="3" placeholder="This slide's main message"></textarea></div>
         <div class="field"><label>Supporting line <span>optional</span></label><textarea id="c_body" rows="3" placeholder="One short supporting sentence"></textarea></div>
         <div class="field"><label>Call to action <span>optional</span></label><input id="c_cta" maxlength="34" placeholder="e.g. Map your first one"></div>
-        <button class="dl primary cDlOne" id="cDlOne">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
-          Download this slide
-        </button>
+        <div class="cDlRow">
+          <button class="dl primary cDlOne" id="cDlOne">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
+            This slide
+          </button>
+          <button class="dl cDlAll" id="cDlAll">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
+            All slides
+          </button>
+        </div>
       </div>
     </div>
     <div class="cfilm" id="cFilm"></div>
@@ -329,6 +337,7 @@ const state = {
   placement:'portrait',
   logo:'main',   // main | ring | off  (ported from Deck Studio)
   safe:false,
+  swipeCue:true, // show the "Swipe to read" prompt on a carousel cover
   get c(){ return this.posts[this.active]; }
 };
 const blankPost = () => ({ kicker:'', head:'', body:'', cta:'' });
@@ -456,20 +465,23 @@ const TEMPLATES = [
   tip:'Best for a single strong message or announcement.',
   render(ctx){
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     const bg=S.accent, ink=inkOn(bg), lv=logoOn(bg);
     const m=Math.round(W*0.075);
     const logoW=u*0.26, logoH=logoW/LOGO_AR;
     const ctaH=u*0.062, gap=u*0.028;
     let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
     s+=ring(W*0.92, H*1.06, u*0.5, mix(bg,BRAND.navy,0.32), 0.6);
+    if(iv) s+=bigNum(si, W-m, m+u*0.30, u*0.34, ink, 0.13, 'end');
     s+=logoTag(lv, m, m, logoW);
     const kFs=u*0.026;
     const footTop=H-m-(c.cta?ctaH+gap:0);
     let y=m+logoH+u*0.05;
     if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.8, kFs, ink); y+=kFs*1.9; }
-    const head=fitHead(c.head, W-2*m, (footTop-y)*(c.body?0.62:0.94), u*0.108, u*0.05, 0.53, 0.98);
+    const head=fitHead(c.head, W-2*m, (footTop-y)*(c.body?(iv?0.34:0.62):0.94), iv?u*0.06:u*0.108, u*0.04, 0.53, 0.98);
     s+=tblock(head.lines, m, y, head.fs, head.lh, ink, 900, 'start', -0.025);
     y+=head.lines.length*head.fs*head.lh + head.fs*0.5;
+    if(iv && c.body){ s+=`<rect x="${m}" y="${(y-head.fs*0.15).toFixed(0)}" width="${(u*0.11).toFixed(0)}" height="${Math.max(4,u*0.009).toFixed(0)}" rx="2" fill="${ink}"/>`; y+=u*0.035; }
     if(c.body){
       const bFs=head.fs*0.5; // brand rule: body is 50% of headline
       const bodyInk = ink===BRAND.navy?mix(BRAND.navy,'#ffffff',0.20):mix('#ffffff',bg,0.10);
@@ -495,7 +507,10 @@ const TEMPLATES = [
     const ipx=px+u*0.06, ipw=pw-u*0.12;
     const ctaH=u*0.058, gap=u*0.028;
     let y=py+u*0.07;
-    s+=logoTag('nvy', ipx, y, u*0.23); y+=u*0.23/LOGO_AR + u*0.05;
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
+    s+=logoTag('nvy', ipx, y, u*0.23);
+    if(iv) s+=bigNum(si, px+pw-u*0.06, y+u*0.23/LOGO_AR, u*0.19, S.accent, 1, 'end');
+    y+=u*0.23/LOGO_AR + u*0.05;
     const kFs=u*0.024;
     if(c.kicker){
       s+=kickerTag(c.kicker, ipx, y+kFs*0.8, kFs, S.accent);
@@ -503,7 +518,7 @@ const TEMPLATES = [
       y+=kFs*2.5;
     }
     const footTop=py+ph-u*0.06-(c.cta?ctaH+gap:0);
-    const head=fitHead(c.head, ipw, (footTop-y)*(c.body?0.62:0.94), u*0.088, u*0.042, 0.52, 1.0);
+    const head=fitHead(c.head, ipw, (footTop-y)*(c.body?(iv?0.34:0.62):0.94), iv?u*0.05:u*0.088, u*0.042, 0.52, 1.0);
     s+=tblock(head.lines, ipx, y, head.fs, head.lh, BRAND.navy, 900, 'start', -0.02);
     y+=head.lines.length*head.fs*head.lh+head.fs*0.45;
     if(c.body){
@@ -521,6 +536,7 @@ const TEMPLATES = [
   tip:'Perfect for a stat, a number, or a punchy one-liner.',
   render(ctx){
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     const m=Math.round(W*0.075);
     const ctaH=u*0.06, gap=u*0.03, kFs=u*0.026;
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
@@ -547,16 +563,17 @@ const TEMPLATES = [
     // TALL/SQUARE: circle hero on top, copy centred below
     const cx=W/2, logoW=u*0.24, logoH=logoW/LOGO_AR;
     s+=logoTag('wht', cx-logoW/2, m, logoW, 'mid');
-    const head=fitHead(c.head, W-2*m, H*0.24, u*0.085, u*0.04, 0.52, 1.0);
+    const head=fitHead(c.head, W-2*m, H*0.24, iv?u*0.05:u*0.085, u*0.04, 0.52, 1.0);
     const headH=head.lines.length*head.fs*head.lh, bFs=head.fs*0.5;
-    const bl=c.body?bodyLines(c.body, W-2.2*m, bFs, H*0.14):[];
+    const bl=c.body?bodyLines(c.body, W-2.2*m, bFs, iv?H*0.30:H*0.14):[];
     const bodyH=bl.length?bl.length*bFs*1.3+head.fs*0.35:0;
     const kickH=c.kicker?kFs*1.9:0, ctaBlk=c.cta?ctaH+gap:0;
     const textH=kickH+headH+bodyH+ctaBlk;
     const circTop=m+logoH+gap, circBottom=H-m-textH-gap;
-    let r=Math.max(u*0.13, Math.min(u*0.30, (circBottom-circTop)/2));
+    let r=Math.max(u*0.13, Math.min(iv?u*0.17:u*0.30, (circBottom-circTop)/2));
     const cy=circTop+r;
     s+=ring(cx, cy, r, S.accent);
+    if(iv) s+=bigNum(si, cx, cy+u*0.072, u*0.20, S.accent, 1, 'middle');
     let y=Math.max(cy+r+gap*1.3, H-m-textH);
     if(c.kicker){ s+=kickerTag(c.kicker, cx, y+kFs*0.8, kFs, S.accent, 'middle'); y+=kickH; }
     s+=tblock(head.lines, cx, y, head.fs, head.lh, '#ffffff', 900, 'middle', -0.02);
@@ -571,17 +588,19 @@ const TEMPLATES = [
   tip:'Good when the headline and support carry equal weight.',
   render(ctx){
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     const m=Math.round(W*0.075);
-    const splitY=H*0.52;
+    const splitY=H*(iv?0.42:0.52);
     const acc=S.accent, topInk=inkOn(acc);
     const ctaH=u*0.06, gap=u*0.028, kFs=u*0.026;
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
     s+=`<rect width="${W}" height="${splitY.toFixed(0)}" fill="${acc}"/>`;
     s+=ring(W*0.92, splitY, u*0.32, mix(acc,BRAND.navy,0.4), 0.55);
     s+=logoTag(logoOn(acc), m, m, u*0.24);
+    if(iv) s+=bigNum(si, W-m, m+u*0.24/LOGO_AR+u*0.02, u*0.17, topInk, 0.92, 'end');
     let y=m+u*0.24/LOGO_AR+u*0.045;
     if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.8, kFs, topInk); y+=kFs*1.8; }
-    const head=fitHead(c.head, W-2*m, splitY-y-u*0.04, u*0.085, u*0.04, 0.52, 1.0);
+    const head=fitHead(c.head, W-2*m, splitY-y-u*0.04, iv?u*0.05:u*0.085, u*0.04, 0.52, 1.0);
     s+=tblock(head.lines, m, y, head.fs, head.lh, topInk, 900, 'start', -0.02);
     let by=splitY+u*0.07;
     const footTop=H-m-(c.cta?ctaH+gap:0);
@@ -599,19 +618,28 @@ const TEMPLATES = [
   render(ctx){
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
     const m=Math.round(W*0.082); const acc=S.accent;
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     const ctaH=u*0.06, gap=u*0.03;
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
     s+=ring(W*0.9, H*0.94, u*0.36, acc, 0.45);
     s+=logoTag('wht', m, m, u*0.22);
-    const qSize=u*0.30;
+    if(iv) s+=bigNum(si, W-m, m+u*0.04+u*0.22/LOGO_AR, u*0.18, acc, 1, 'end');
+    const qSize=iv?u*0.15:u*0.30;
     s+=`<text x="${(m-u*0.01).toFixed(0)}" y="${(m+u*0.18+qSize*0.74).toFixed(0)}" font-size="${qSize.toFixed(0)}" fill="${acc}" font-weight="900">“</text>`;
     let y=m+u*0.18+qSize*0.46;
-    const attrH=c.kicker?u*0.06:0;
+    if(iv && c.kicker){ const eFs=u*0.026; s+=kickerTag(c.kicker, m, y, eFs, acc); y+=eFs*1.9; }
+    const attrH=(c.kicker && !iv)?u*0.06:0;
     const footTop=H-m-attrH-(c.cta?ctaH+gap:0);
-    const head=fitHead(c.head, W-2*m, (footTop-y)*0.92, u*0.08, u*0.04, 0.52, 1.08);
+    const head=fitHead(c.head, W-2*m, (footTop-y)*(iv?0.40:0.92), iv?u*0.052:u*0.08, u*0.04, 0.52, 1.08);
     s+=tblock(head.lines, m, y, head.fs, head.lh, '#ffffff', 800, 'start', -0.012);
-    y+=head.lines.length*head.fs*head.lh + u*0.04;
-    if(c.kicker){
+    y+=head.lines.length*head.fs*head.lh + u*0.03;
+    if(iv && c.body){
+      const bFs=head.fs*0.5;
+      s+=`<rect x="${m}" y="${(y-head.fs*0.05).toFixed(0)}" width="${(u*0.1).toFixed(0)}" height="${Math.max(4,u*0.008).toFixed(0)}" rx="2" fill="${acc}"/>`;
+      y+=u*0.032;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, footTop-y), m, y, bFs, 1.3, mix('#ffffff',BRAND.navy,0.18), 600, 'start', 0);
+    }
+    if(c.kicker && !iv){
       const aFs=u*0.026;
       s+=`<rect x="${m}" y="${y.toFixed(0)}" width="${(u*0.06).toFixed(0)}" height="${Math.max(3,u*0.006).toFixed(0)}" fill="${acc}"/>`;
       s+=kickerTag(c.kicker, m+u*0.08, y+aFs*0.5, aFs, mix('#ffffff',BRAND.navy,0.2));
@@ -631,11 +659,13 @@ const TEMPLATES = [
     const fx=m, fy=m, fw=W-2*m, fh=H-2*m, bw=Math.max(3,u*0.006);
     s+=`<rect x="${fx}" y="${fy}" width="${fw}" height="${fh}" rx="${(u*0.02).toFixed(0)}" fill="none" stroke="${ink}" stroke-width="${bw.toFixed(1)}"/>`;
     const ipw=fw-u*0.12, kFs=u*0.026, ctaH=u*0.06, gap=u*0.03;
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     s+=logoTag(logoOn(bg), W/2-u*0.12, fy+u*0.055, u*0.24, 'mid');
+    if(iv) s+=bigNum(si, fx+fw-u*0.07, fy+u*0.055+u*0.24/LOGO_AR, u*0.155, ink, 0.85, 'end');
     let topY=fy+u*0.055+u*0.24/LOGO_AR+u*0.04;
     if(c.kicker){ s+=kickerTag(c.kicker, W/2, topY+kFs*0.8, kFs, ink, 'middle'); topY+=kFs*1.6; }
     const footTop=fy+fh-u*0.06-(c.cta?ctaH+gap:0);
-    const head=fitHead(c.head, ipw, (footTop-topY)*(c.body?0.6:0.86), u*0.092, u*0.045, 0.52, 1.0);
+    const head=fitHead(c.head, ipw, (footTop-topY)*(c.body?(iv?0.34:0.6):0.86), iv?u*0.052:u*0.092, u*0.045, 0.52, 1.0);
     const bFs=head.fs*0.5;
     const bl=c.body?bodyLines(c.body, ipw, bFs, (footTop-topY)*0.32):[];
     const headH=head.lines.length*head.fs*head.lh;
@@ -653,11 +683,13 @@ const TEMPLATES = [
   render(ctx){
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
     const bandW=W*0.32, acc=S.accent, bInk=inkOn(acc);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     const m=Math.round(u*0.07);
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
     s+=`<rect width="${bandW.toFixed(0)}" height="${H}" fill="${acc}"/>`;
     s+=ring(bandW*0.5, H*0.5, bandW*0.78, inkOn(acc), 0.13);
     s+=logoTag(logoOn(acc), m, m, Math.min(u*0.26, bandW-1.6*m));
+    if(iv) s+=bigNum(si, bandW/2, H*0.5+u*0.075, u*0.22, bInk, 0.92, 'middle');
     if(c.kicker){
       const eFs=u*0.028;
       s+=`<text x="${m}" y="${(H-m).toFixed(0)}" font-size="${eFs.toFixed(0)}" fill="${bInk}" font-weight="800" letter-spacing="${(eFs*0.16).toFixed(1)}" transform="rotate(-90 ${m} ${(H-m).toFixed(0)})">${esc(c.kicker.toUpperCase())}</text>`;
@@ -665,9 +697,9 @@ const TEMPLATES = [
     const tx=bandW+u*0.07, tw=W-tx-u*0.07;
     const ctaH=u*0.06, gap=u*0.03;
     const footTop=H-m-(c.cta?ctaH+gap:0);
-    const head=fitHead(c.head, tw, (footTop-m)*(c.body?0.55:0.82), u*0.082, u*0.04, 0.52, 1.0);
+    const head=fitHead(c.head, tw, (footTop-m)*(c.body?(iv?0.32:0.55):0.82), iv?u*0.05:u*0.082, u*0.04, 0.52, 1.0);
     const bFs=head.fs*0.5;
-    const bl=c.body?bodyLines(c.body, tw, bFs, (footTop-m)*0.32):[];
+    const bl=c.body?bodyLines(c.body, tw, bFs, (footTop-m)*(iv?0.5:0.32)):[];
     const headH=head.lines.length*head.fs*head.lh, bodyH=bl.length?bl.length*bFs*1.3+head.fs*0.4:0;
     let y=Math.max(m, (H-(headH+bodyH))/2);
     s+=tblock(head.lines, tx, y, head.fs, head.lh, '#ffffff', 900,'start',-0.02); y+=headH+head.fs*0.4;
@@ -684,11 +716,13 @@ const TEMPLATES = [
     const m=Math.round(W*0.082), acc=S.accent;
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
     s+=ring(W*0.94, H*0.05, u*0.28, acc, 0.4);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     s+=logoTag('wht', m, m, u*0.22);
+    if(iv) s+=bigNum(si, W-m, m+u*0.22/LOGO_AR, u*0.155, acc, 0.95, 'end');
     let y=m+u*0.22/LOGO_AR+u*0.05;
     const kFs=u*0.026;
     if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.8, kFs, acc); y+=kFs*1.9; }
-    const head=fitHead(c.head, W-2*m, H*0.2, u*0.07, u*0.038, 0.52, 1.0);
+    const head=fitHead(c.head, W-2*m, H*0.2, iv?u*0.05:u*0.07, u*0.038, 0.52, 1.0);
     s+=tblock(head.lines, m, y, head.fs, head.lh, '#ffffff', 900,'start',-0.02);
     y+=head.lines.length*head.fs*head.lh + u*0.045;
     let pts=(c.body||'').split(/\n|(?<=[.!?])\s+|\s*\|\s*/).map(t=>t.trim().replace(/[.]$/,'')).filter(Boolean).slice(0,4);
@@ -718,20 +752,22 @@ const TEMPLATES = [
     const {c,S,W,H,uid}=ctx; const u=Math.min(W,H);
     const bg=S.accent, ink=inkOn(bg);
     const m=Math.round(W*0.06);
+    const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
     s+=logoTag(logoOn(bg), m, m, u*0.22);
+    if(iv) s+=bigNum(si, W-m, m+u*0.22/LOGO_AR+u*0.30, u*0.40, ink, 0.12, 'end');
     const kFs=u*0.028;
     if(c.kicker){ s+=kickerTag(c.kicker, W-m, m+kFs*0.95, kFs, ink, 'end'); }
     const top=m+u*0.22/LOGO_AR+u*0.04;
     const ctaH=u*0.062, gap=u*0.03;
-    const footTop=H-m-(c.cta?ctaH+gap:0)-(c.body?u*0.1:0);
-    const head=fitHead(c.head, W-2*m, footTop-top, u*0.2, u*0.07, 0.5, 0.94);
+    const footTop=H-m-(c.cta?ctaH+gap:0)-(c.body?(iv?u*0.34:u*0.1):0);
+    const head=fitHead(c.head, W-2*m, footTop-top, iv?u*0.078:u*0.2, u*0.05, 0.5, 0.94);
     const headH=head.lines.length*head.fs*head.lh;
     let y=top+Math.max(0,(footTop-top-headH)/2);
     s+=tblock(head.lines, m, y, head.fs, head.lh, ink, 900,'start',-0.03);
     if(c.body){
-      const bFs=u*0.032;
-      s+=tblock(bodyLines(c.body, W-2*m, bFs, u*0.09), m, footTop+u*0.015, bFs, 1.25, ink===BRAND.navy?mix(BRAND.navy,'#ffffff',0.2):mix('#ffffff',bg,0.1), 600,'start',-0.005);
+      const bFs=iv?u*0.036:u*0.032;
+      s+=tblock(bodyLines(c.body, W-2*m, bFs, iv?u*0.32:u*0.09), m, footTop+u*0.02, bFs, 1.3, ink===BRAND.navy?mix(BRAND.navy,'#ffffff',0.2):mix('#ffffff',bg,0.1), 600,'start',-0.005);
     }
     if(c.cta){ const cbg=S.id==='creative'?BRAND.navy:BRAND.yellow; s+=ctaPill(c.cta, m, H-m-ctaH, ctaH, cbg, cbg===BRAND.navy?'#ffffff':BRAND.navy); }
     return s;
@@ -751,35 +787,35 @@ function buildSVG(tpl, P, withSafe, copy, variant, slide){
   const inner=tpl.render({c:copy, S, W:P.w, H:P.h, uid, variant, slide});
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.w} ${P.h}" width="${P.w}" height="${P.h}">
     <style>text{font-family:'Effra Trial','Effra',system-ui,'Segoe UI',sans-serif;}</style>
-    ${inner}${slideFurniture(P,S,variant,slide)}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
+    ${inner}${slideFurniture(P,S,variant,slide)}${swipePrompt(P,S,variant,slide)}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
 }
 
-// The carousel slide indicator. Shared across all 9 templates so a carousel reads as a
-// set without per-template art: a bottom-centred chip with a dot per slide (active dot in
-// the sector accent), a counter, and a "swipe" cue on the cover. Legible on any template
-// background thanks to the light chip. Returns nothing for a single post.
+// A bold slide number, the unifying motif that makes the inner slides read as one series
+// and sets them apart from the loud cover. Drawn by each template's inner branch.
+function bigNum(idx, x, y, fs, colour, op=1, anchor='start'){
+  return `<text x="${(+x).toFixed(0)}" y="${(+y).toFixed(0)}" font-size="${fs.toFixed(0)}" fill="${colour}"
+    fill-opacity="${op}" font-weight="900" letter-spacing="${(-fs*0.04).toFixed(1)}" text-anchor="${anchor}">${String(idx+1).padStart(2,'0')}</text>`;
+}
+
+// The progress chip: a bottom-centred dot row plus a counter. Shown on every slide of a
+// carousel so position is always clear. Legible on any template background via the light chip.
 function slideFurniture(P,S,variant,slide){
   if(!slide || slide.count<2) return '';
   const W=P.w, H=P.h, u=Math.min(W,H);
-  const cover = variant==='cover';
   const n=slide.count, i=slide.index;
   const r=u*0.012, gap=u*0.018;                     // dot radius + spacing
   const counter=`${String(i+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}`;
-  const swipe = cover ? 'SWIPE' : '';
   const cFs=u*0.026;
-  // chip geometry
   const dotsW=(n-1)*gap;
-  const padX=u*0.034, mid=u*0.012;
+  const padX=u*0.034, mid=u*0.014;
   const counterW=counter.length*cFs*0.58;
-  const swipeW = swipe ? swipe.length*cFs*0.62 + cFs*1.4 : 0;
-  const chipW = padX*2 + dotsW + mid + counterW + (swipe? mid+swipeW : 0);
-  const chipH = u*0.072;
-  const cx = W/2, cy = H - u*0.06 - chipH/2;
+  const chipW = padX*2 + dotsW + mid + counterW;
+  const chipH = u*0.066;
+  const cx = W/2, cy = H - u*0.05 - chipH/2;
   const x0 = cx - chipW/2;
   let s = `<g>
     <rect x="${(x0).toFixed(1)}" y="${(cy-chipH/2).toFixed(1)}" width="${chipW.toFixed(1)}" height="${chipH.toFixed(1)}"
       rx="${(chipH/2).toFixed(1)}" fill="#ffffff" fill-opacity="0.94" stroke="${BRAND.navy}" stroke-opacity="0.14" stroke-width="${(u*0.003).toFixed(1)}"/>`;
-  // dots
   let dx = x0 + padX + r;
   for(let k=0;k<n;k++){
     const on = k===i;
@@ -787,19 +823,29 @@ function slideFurniture(P,S,variant,slide){
       fill="${on?S.accent:BRAND.navy}" fill-opacity="${on?1:0.22}"/>`;
     dx += gap;
   }
-  // counter
   const tx = x0 + padX + dotsW + mid;
   s += `<text x="${tx.toFixed(1)}" y="${(cy+cFs*0.34).toFixed(1)}" font-size="${cFs.toFixed(1)}"
       fill="${BRAND.navy}" font-weight="800" letter-spacing="${(cFs*0.04).toFixed(2)}">${counter}</text>`;
-  // swipe cue (cover only)
-  if(swipe){
-    const sx = tx + counterW + mid;
-    s += `<text x="${sx.toFixed(1)}" y="${(cy+cFs*0.34).toFixed(1)}" font-size="${cFs.toFixed(1)}"
-        fill="${S.accent}" font-weight="900" letter-spacing="${(cFs*0.10).toFixed(2)}">${swipe}</text>`;
-    const ax = sx + swipe.length*cFs*0.62 + cFs*0.5, ay=cy;
-    s += `<path d="M ${(ax-cFs*0.5).toFixed(1)} ${ay.toFixed(1)} h ${(cFs*0.8).toFixed(1)} m ${(-cFs*0.36).toFixed(1)} ${(-cFs*0.3).toFixed(1)} l ${(cFs*0.36).toFixed(1)} ${(cFs*0.3).toFixed(1)} l ${(-cFs*0.36).toFixed(1)} ${(cFs*0.3).toFixed(1)}"
-        stroke="${S.accent}" stroke-width="${(cFs*0.14).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  }
+  return s+`</g>`;
+}
+
+// The cover swipe prompt: a pill that pulls people into the carousel. Cover only, and only
+// when the Swipe prompt toggle is on. Sits just above the progress chip.
+function swipePrompt(P,S,variant,slide){
+  if(!slide || slide.count<2 || variant!=='cover' || !state.swipeCue) return '';
+  const W=P.w, H=P.h, u=Math.min(W,H);
+  const txt='Swipe to read';
+  const fs=u*0.03, padX=u*0.038, h=u*0.082;
+  const arrowW=fs*1.4;
+  const w=padX*2 + txt.length*fs*0.54 + arrowW;
+  const x=W/2 - w/2, y=H - u*0.05 - u*0.066 - u*0.022 - h;   // above the chip
+  const ink=inkOn(S.accent);
+  let s=`<g>
+    <rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" rx="${(h/2).toFixed(0)}" fill="${S.accent}"/>
+    <text x="${(x+padX).toFixed(0)}" y="${(y+h*0.64).toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${ink}" font-weight="800" letter-spacing="-0.2">${txt}</text>`;
+  const ax=x+w-padX-arrowW*0.4, ay=y+h/2;
+  s+=`<path d="M ${(ax-fs*0.55).toFixed(1)} ${ay.toFixed(1)} h ${(fs*0.85).toFixed(1)} m ${(-fs*0.38).toFixed(1)} ${(-fs*0.32).toFixed(1)} l ${(fs*0.38).toFixed(1)} ${(fs*0.32).toFixed(1)} l ${(-fs*0.38).toFixed(1)} ${(fs*0.32).toFixed(1)}"
+    stroke="${ink}" stroke-width="${(fs*0.14).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   return s+`</g>`;
 }
 
@@ -885,7 +931,7 @@ function renderGallery(){
       <div class="canvas" style="aspect-ratio:${P.w}/${P.h}">${svg}</div>
       <div class="bar">
         <div class="nm">${tpl.name}<small>${carousel?'Build carousel':P.sub}</small></div>
-        <button class="dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>${carousel?'Open':'PNG'}</button>
+        <button class="dl">${carousel?'Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>PNG'}</button>
       </div>`;
     card.querySelector('.canvas').onclick=()=>openModal(tpl);
     card.querySelector('.dl').onclick=e=>{ e.stopPropagation();
@@ -979,6 +1025,13 @@ document.getElementById('cDlOne').onclick=()=>{
   exportPNG(svgFor(tpl,P,false,i), P.w, P.h, fileName(tpl.id,i));
 };
 document.getElementById('cDlAll').onclick=downloadAll;
+// left / right arrow keys step through the carousel (ignored while typing in a field)
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('cmodal').classList.contains('on')) return;
+  if(/^(INPUT|TEXTAREA)$/.test((e.target.tagName||''))) return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); cView.active=Math.min(state.posts.length-1,cView.active+1); renderCarousel(); }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); cView.active=Math.max(0,cView.active-1); renderCarousel(); }
+});
 cBindEdit();
 
 /* inputs */
@@ -992,6 +1045,14 @@ const st=document.getElementById('safeToggle');
 function toggleSafe(){ state.safe=!state.safe; st.classList.toggle('on',state.safe); renderGallery(); }
 st.onclick=toggleSafe;
 st.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSafe(); } };
+
+const swt=document.getElementById('swipeToggle');
+function toggleSwipe(){
+  state.swipeCue=!state.swipeCue; swt.classList.toggle('on',state.swipeCue); renderGallery();
+  if(document.getElementById('cmodal').classList.contains('on')) renderCarousel();
+}
+swt.onclick=toggleSwipe;
+swt.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSwipe(); } };
 
 /* ============ Studio Autofill: load from link / import ============ */
 function renderAll(){ renderSectors(); renderPlacements(); renderLogoMode(); renderGallery(); }
