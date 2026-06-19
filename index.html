@@ -133,6 +133,33 @@
 
   .note{font-size:12px;color:#9b97ac;margin-top:44px;line-height:1.7;max-width:80ch}
   .note b{color:var(--charcoal)}
+
+  /* carousel workspace */
+  .csheet{max-width:min(96vw,1040px)}
+  .chead{display:flex;align-items:center;gap:14px;margin:2px 40px 18px 0;flex-wrap:wrap}
+  .cbackBtn{border:1.5px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;
+    padding:9px 15px;font:inherit;font-size:13px;font-weight:900;cursor:pointer;transition:.14s}
+  .cbackBtn:hover{background:var(--soft);border-color:#cfc9e0}
+  .ctitle{font-size:19px;font-weight:900;letter-spacing:-.4px;margin-right:auto}
+  .cdlAll{width:auto}
+  .cstage{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .cbig{flex:1 1 340px;min-width:260px;max-width:440px}
+  .cbig .canvas{background:repeating-conic-gradient(#f0edf6 0% 25%,#f6f4fb 0% 50%) 50%/26px 26px;border-radius:12px;overflow:hidden}
+  .cbig svg{display:block;width:100%;height:auto}
+  .cedit{flex:1 1 280px;min-width:240px}
+  .cSlideLabel{font-size:14px;color:var(--charcoal);margin:2px 0 14px}
+  .cSlideLabel b{color:var(--navy);font-weight:900}
+  .cedit .field{margin-bottom:13px}
+  .cDlOne{width:100%;justify-content:center;font-size:14px;padding:12px 18px;margin-top:4px}
+  .cfilm{display:flex;gap:12px;overflow-x:auto;padding:20px 2px 4px;margin-top:8px;border-top:1px solid var(--line)}
+  .cthumb{position:relative;flex:0 0 auto;width:96px;cursor:pointer;border-radius:10px;padding:5px;
+    border:2px solid transparent;background:var(--soft);transition:.14s}
+  .cthumb:hover{border-color:#cfc9e0}
+  .cthumb.on{border-color:var(--navy)}
+  .cthumbCanvas{border-radius:6px;overflow:hidden;background:#fff}
+  .cthumbCanvas svg{display:block;width:100%;height:auto}
+  .cthumb span{position:absolute;top:9px;left:9px;background:var(--navy);color:#fff;font-size:11px;font-weight:900;
+    width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1}
 </style>
 </head>
 <body>
@@ -228,6 +255,36 @@
   </div>
 </div>
 
+<!-- CAROUSEL MODAL -->
+<div class="modal" id="cmodal">
+  <div class="sheet csheet">
+    <button class="x" id="cmodalX">×</button>
+    <div class="chead">
+      <button class="cbackBtn" id="cBack">← back to styles</button>
+      <span class="ctitle" id="cTitle">Carousel</span>
+      <button class="dl primary cdlAll" id="cDlAll">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
+        Download all
+      </button>
+    </div>
+    <div class="cstage">
+      <div class="cbig"><div class="canvas" id="cCanvas"></div></div>
+      <div class="cedit">
+        <div class="cSlideLabel" id="cSlideLabel"></div>
+        <div class="field"><label>Eyebrow <span>optional</span></label><input id="c_kicker" maxlength="28" placeholder="e.g. THE SHIFT"></div>
+        <div class="field"><label>Headline <span>the hero line</span></label><textarea id="c_head" rows="3" placeholder="This slide's main message"></textarea></div>
+        <div class="field"><label>Supporting line <span>optional</span></label><textarea id="c_body" rows="3" placeholder="One short supporting sentence"></textarea></div>
+        <div class="field"><label>Call to action <span>optional</span></label><input id="c_cta" maxlength="34" placeholder="e.g. Map your first one"></div>
+        <button class="dl primary cDlOne" id="cDlOne">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>
+          Download this slide
+        </button>
+      </div>
+    </div>
+    <div class="cfilm" id="cFilm"></div>
+  </div>
+</div>
+
 <script>
 /* ============ Embedded brand assets (real logos, base64) ============ */
 const LOGOS = {
@@ -259,15 +316,22 @@ const SAFE = 0.075; // ~80px on 1080, matches the Safe-Zone Checker
 
 /* ============ State ============ */
 const state = {
-  c:{ kicker:'INSIGHT',
-      head:'Most brands talk. The best ones listen first.',
-      body:'Listen before you launch. Test fast and cheaply. Scale only what works.',
-      cta:'Read the report' },
+  // posts is an array of copy blocks. posts[0] is the carousel cover; a single
+  // entry behaves exactly like the original single-post tool. `active` is the slide
+  // the left editor is bound to (0 in grid mode). `c` is a live alias to it, so every
+  // existing state.c read keeps working unchanged.
+  posts:[ { kicker:'INSIGHT',
+            head:'Most brands talk. The best ones listen first.',
+            body:'Listen before you launch. Test fast and cheaply. Scale only what works.',
+            cta:'Read the report' } ],
+  active:0,
   sector:'insights',
   placement:'portrait',
   logo:'main',   // main | ring | off  (ported from Deck Studio)
-  safe:false
+  safe:false,
+  get c(){ return this.posts[this.active]; }
 };
+const blankPost = () => ({ kicker:'', head:'', body:'', cta:'' });
 
 /* ============ Colour helpers ============ */
 function lum(hex){
@@ -677,13 +741,66 @@ const TEMPLATES = [
 
 /* ============ Build SVG string ============ */
 let UID=0;
-function buildSVG(tpl, P, withSafe){
+// copy/variant/slide are optional. They default to the active post as a single cover,
+// so every existing single-post call site keeps working untouched.
+function buildSVG(tpl, P, withSafe, copy, variant, slide){
   const S=SECTORS.find(x=>x.id===state.sector);
   const uid=++UID;
-  const inner=tpl.render({c:state.c, S, W:P.w, H:P.h, uid});
+  copy = copy || state.c;
+  variant = variant || 'cover';
+  const inner=tpl.render({c:copy, S, W:P.w, H:P.h, uid, variant, slide});
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.w} ${P.h}" width="${P.w}" height="${P.h}">
     <style>text{font-family:'Effra Trial','Effra',system-ui,'Segoe UI',sans-serif;}</style>
-    ${inner}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
+    ${inner}${slideFurniture(P,S,variant,slide)}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
+}
+
+// The carousel slide indicator. Shared across all 9 templates so a carousel reads as a
+// set without per-template art: a bottom-centred chip with a dot per slide (active dot in
+// the sector accent), a counter, and a "swipe" cue on the cover. Legible on any template
+// background thanks to the light chip. Returns nothing for a single post.
+function slideFurniture(P,S,variant,slide){
+  if(!slide || slide.count<2) return '';
+  const W=P.w, H=P.h, u=Math.min(W,H);
+  const cover = variant==='cover';
+  const n=slide.count, i=slide.index;
+  const r=u*0.012, gap=u*0.018;                     // dot radius + spacing
+  const counter=`${String(i+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}`;
+  const swipe = cover ? 'SWIPE' : '';
+  const cFs=u*0.026;
+  // chip geometry
+  const dotsW=(n-1)*gap;
+  const padX=u*0.034, mid=u*0.012;
+  const counterW=counter.length*cFs*0.58;
+  const swipeW = swipe ? swipe.length*cFs*0.62 + cFs*1.4 : 0;
+  const chipW = padX*2 + dotsW + mid + counterW + (swipe? mid+swipeW : 0);
+  const chipH = u*0.072;
+  const cx = W/2, cy = H - u*0.06 - chipH/2;
+  const x0 = cx - chipW/2;
+  let s = `<g>
+    <rect x="${(x0).toFixed(1)}" y="${(cy-chipH/2).toFixed(1)}" width="${chipW.toFixed(1)}" height="${chipH.toFixed(1)}"
+      rx="${(chipH/2).toFixed(1)}" fill="#ffffff" fill-opacity="0.94" stroke="${BRAND.navy}" stroke-opacity="0.14" stroke-width="${(u*0.003).toFixed(1)}"/>`;
+  // dots
+  let dx = x0 + padX + r;
+  for(let k=0;k<n;k++){
+    const on = k===i;
+    s += `<circle cx="${dx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${(on?r*1.15:r*0.78).toFixed(1)}"
+      fill="${on?S.accent:BRAND.navy}" fill-opacity="${on?1:0.22}"/>`;
+    dx += gap;
+  }
+  // counter
+  const tx = x0 + padX + dotsW + mid;
+  s += `<text x="${tx.toFixed(1)}" y="${(cy+cFs*0.34).toFixed(1)}" font-size="${cFs.toFixed(1)}"
+      fill="${BRAND.navy}" font-weight="800" letter-spacing="${(cFs*0.04).toFixed(2)}">${counter}</text>`;
+  // swipe cue (cover only)
+  if(swipe){
+    const sx = tx + counterW + mid;
+    s += `<text x="${sx.toFixed(1)}" y="${(cy+cFs*0.34).toFixed(1)}" font-size="${cFs.toFixed(1)}"
+        fill="${S.accent}" font-weight="900" letter-spacing="${(cFs*0.10).toFixed(2)}">${swipe}</text>`;
+    const ax = sx + swipe.length*cFs*0.62 + cFs*0.5, ay=cy;
+    s += `<path d="M ${(ax-cFs*0.5).toFixed(1)} ${ay.toFixed(1)} h ${(cFs*0.8).toFixed(1)} m ${(-cFs*0.36).toFixed(1)} ${(-cFs*0.3).toFixed(1)} l ${(cFs*0.36).toFixed(1)} ${(cFs*0.3).toFixed(1)} l ${(-cFs*0.36).toFixed(1)} ${(cFs*0.3).toFixed(1)}"
+        stroke="${S.accent}" stroke-width="${(cFs*0.14).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  return s+`</g>`;
 }
 
 /* ============ PNG export ============ */
@@ -702,10 +819,12 @@ function exportPNG(svgString, w, h, filename){
   img.onerror=()=>alert('Export hit a snag, try again.');
   img.src='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgString)));
 }
-function fileName(tplId){
+function fileName(tplId, idx){
   const P=PLACEMENTS.find(x=>x.id===state.placement);
-  const slug=(state.c.head||'post').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,32);
-  return `influential-${state.sector}-${tplId}-${P.name.toLowerCase()}-${slug||'post'}.png`;
+  const post = (idx!=null && state.posts[idx]) ? state.posts[idx] : state.c;
+  const slug=(post.head||'post').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,32);
+  const n = (state.posts.length>1 && idx!=null) ? '-'+String(idx+1).padStart(2,'0') : '';
+  return `influential-${state.sector}-${tplId}-${P.name.toLowerCase()}-${slug||'post'}${n}.png`;
 }
 
 /* ============ Render UI ============ */
@@ -751,25 +870,32 @@ function renderLogoMode(){
 function renderGallery(){
   const P=PLACEMENTS.find(x=>x.id===state.placement);
   const S=SECTORS.find(x=>x.id===state.sector);
-  document.getElementById('galMeta').innerHTML=
-    `<b>${TEMPLATES.length} layouts</b> · ${S.name} · ${P.name} ${P.sub} · click any post to enlarge & download`;
+  const n=state.posts.length;
+  const carousel=n>1;
+  const cover=state.posts[0];
+  const slide=carousel?{index:0,count:n}:null;
+  document.getElementById('galMeta').innerHTML= carousel
+    ? `<b>${n}-slide carousel</b> · ${S.name} · ${P.name} ${P.sub} · showing slide 1 in each style · <b>click a style to build the carousel</b>`
+    : `<b>${TEMPLATES.length} layouts</b> · ${S.name} · ${P.name} ${P.sub} · click any post to enlarge & download`;
   const g=document.getElementById('gallery'); g.innerHTML='';
   TEMPLATES.forEach(tpl=>{
-    const svg=buildSVG(tpl,P,state.safe);
+    const svg=buildSVG(tpl,P,state.safe,cover,'cover',slide);
     const card=document.createElement('div'); card.className='post';
     card.innerHTML=`
       <div class="canvas" style="aspect-ratio:${P.w}/${P.h}">${svg}</div>
       <div class="bar">
-        <div class="nm">${tpl.name}<small>${P.sub}</small></div>
-        <button class="dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>PNG</button>
+        <div class="nm">${tpl.name}<small>${carousel?'Build carousel':P.sub}</small></div>
+        <button class="dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg>${carousel?'Open':'PNG'}</button>
       </div>`;
     card.querySelector('.canvas').onclick=()=>openModal(tpl);
     card.querySelector('.dl').onclick=e=>{ e.stopPropagation();
-      exportPNG(buildSVG(tpl,P,false), P.w, P.h, fileName(tpl.id)); };
+      if(carousel) openModal(tpl);
+      else exportPNG(buildSVG(tpl,P,false), P.w, P.h, fileName(tpl.id)); };
     g.appendChild(card);
   });
 }
 function openModal(tpl){
+  if(state.posts.length>1){ openCarousel(tpl); return; }
   const P=PLACEMENTS.find(x=>x.id===state.placement);
   const S=SECTORS.find(x=>x.id===state.sector);
   document.getElementById('modalCanvas').innerHTML=buildSVG(tpl,P,state.safe);
@@ -784,7 +910,76 @@ function openModal(tpl){
 }
 document.getElementById('modalX').onclick=()=>document.getElementById('modal').classList.remove('on');
 document.getElementById('modal').onclick=e=>{ if(e.target.id==='modal') e.target.classList.remove('on'); };
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.getElementById('modal').classList.remove('on'); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ document.getElementById('modal').classList.remove('on'); closeCarousel(); } });
+
+/* ============ Carousel workspace ============ */
+const cView = { tpl:null, active:0 };
+function svgFor(tpl,P,withSafe,i){
+  return buildSVG(tpl,P,withSafe, state.posts[i], i===0?'cover':'inner', {index:i,count:state.posts.length});
+}
+function openCarousel(tpl){
+  cView.tpl=tpl; cView.active=0;
+  document.getElementById('cTitle').textContent=`Carousel · ${tpl.name}`;
+  renderCarousel();
+  document.getElementById('cmodal').classList.add('on');
+}
+function closeCarousel(){
+  const m=document.getElementById('cmodal');
+  if(!m || !m.classList.contains('on')) return;
+  m.classList.remove('on');
+  state.active=0; syncInputs(); renderGallery();   // cover edits flow back to the grid
+}
+function renderCarousel(){
+  const tpl=cView.tpl, i=cView.active;
+  const P=PLACEMENTS.find(x=>x.id===state.placement);
+  const n=state.posts.length;
+  document.getElementById('cCanvas').innerHTML=svgFor(tpl,P,state.safe,i);
+  document.getElementById('cCanvas').style.aspectRatio=`${P.w}/${P.h}`;
+  document.getElementById('cSlideLabel').innerHTML=
+    `<b>Slide ${i+1} of ${n}</b> · ${i===0?'Cover':'Inner slide'}`;
+  // edit fields for the active slide
+  const p=state.posts[i];
+  ['kicker','head','body','cta'].forEach(k=>{
+    const el=document.getElementById('c_'+k); el.value=p[k]||'';
+  });
+  // filmstrip
+  const film=document.getElementById('cFilm'); film.innerHTML='';
+  state.posts.forEach((post,k)=>{
+    const t=document.createElement('div');
+    t.className='cthumb'+(k===i?' on':'');
+    t.innerHTML=`<div class="cthumbCanvas" style="aspect-ratio:${P.w}/${P.h}">${svgFor(tpl,P,false,k)}</div><span>${k+1}</span>`;
+    t.onclick=()=>{ cView.active=k; renderCarousel(); };
+    film.appendChild(t);
+  });
+}
+function cBindEdit(){
+  ['kicker','head','body','cta'].forEach(k=>{
+    const el=document.getElementById('c_'+k);
+    el.addEventListener('input',()=>{
+      state.posts[cView.active][k]=el.value;
+      const tpl=cView.tpl, P=PLACEMENTS.find(x=>x.id===state.placement), i=cView.active;
+      // refresh the big preview and just this slide's thumbnail (cheap, no full rebuild)
+      document.getElementById('cCanvas').innerHTML=svgFor(tpl,P,state.safe,i);
+      const thumb=document.querySelectorAll('#cFilm .cthumbCanvas')[i];
+      if(thumb) thumb.innerHTML=svgFor(tpl,P,false,i);
+    });
+  });
+}
+function downloadAll(){
+  const tpl=cView.tpl, P=PLACEMENTS.find(x=>x.id===state.placement);
+  state.posts.forEach((post,i)=>{
+    setTimeout(()=>exportPNG(svgFor(tpl,P,false,i), P.w, P.h, fileName(tpl.id,i)), i*700);
+  });
+}
+document.getElementById('cmodalX').onclick=closeCarousel;
+document.getElementById('cBack').onclick=closeCarousel;
+document.getElementById('cmodal').onclick=e=>{ if(e.target.id==='cmodal') closeCarousel(); };
+document.getElementById('cDlOne').onclick=()=>{
+  const tpl=cView.tpl, P=PLACEMENTS.find(x=>x.id===state.placement), i=cView.active;
+  exportPNG(svgFor(tpl,P,false,i), P.w, P.h, fileName(tpl.id,i));
+};
+document.getElementById('cDlAll').onclick=downloadAll;
+cBindEdit();
 
 /* inputs */
 function bind(id,key){
@@ -806,17 +1001,27 @@ function syncInputs(){
   document.getElementById('i_body').value   = state.c.body||'';
   document.getElementById('i_cta').value    = state.c.cta||'';
 }
+function cleanPost(x){
+  const p=blankPost();
+  if(x && typeof x==='object') ['kicker','head','body','cta'].forEach(k=>{ if(typeof x[k]==='string') p[k]=x[k]; });
+  return p;
+}
 function loadState(p){
-  if(!p || p.v!==1 || p.tool!=='post-studio') throw new Error('not a Post Studio payload');
+  if(!p || p.tool!=='post-studio' || (p.v!==1 && p.v!==2)) throw new Error('not a Post Studio payload');
   if(p.sector && SECTORS.some(s=>s.id===p.sector)) state.sector=p.sector;
   if(p.placement && PLACEMENTS.some(x=>x.id===p.placement)) state.placement=p.placement;
   if(p.logo && ['main','ring','off'].includes(p.logo)) state.logo=p.logo;
-  if(p.c && typeof p.c==='object') ['kicker','head','body','cta'].forEach(k=>{ if(typeof p.c[k]==='string') state.c[k]=p.c[k]; });
+  // v2 carries an array of posts; v1 carries a single `c`. Both normalise to posts[].
+  let posts=[];
+  if(Array.isArray(p.posts)) posts=p.posts.map(cleanPost);
+  else if(p.c && typeof p.c==='object') posts=[cleanPost(p.c)];
+  posts=posts.filter(x=>x.kicker||x.head||x.body||x.cta);
+  if(posts.length){ state.posts=posts; state.active=0; }
   syncInputs(); renderAll();
 }
 function currentPayload(){
-  return { v:1, tool:'post-studio', sector:state.sector, placement:state.placement, logo:state.logo,
-           c:{ kicker:state.c.kicker, head:state.c.head, body:state.c.body, cta:state.c.cta } };
+  return { v:2, tool:'post-studio', sector:state.sector, placement:state.placement, logo:state.logo,
+           posts: state.posts.map(p=>({ kicker:p.kicker, head:p.head, body:p.body, cta:p.cta })) };
 }
 function b64urlEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return JSON.parse(decodeURIComponent(escape(atob(s)))); }
