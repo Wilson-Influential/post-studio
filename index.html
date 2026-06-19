@@ -212,10 +212,6 @@
         <div class="lab">Show safe zones <small>Keeps copy clear of crop & UI</small></div>
         <div class="switch"></div>
       </div>
-      <div class="toggle on" id="swipeToggle" role="switch" tabindex="0">
-        <div class="lab">Swipe prompt <small>“Swipe to read” on a carousel cover</small></div>
-        <div class="switch"></div>
-      </div>
 
       <h2>Studio link</h2>
       <div class="shareRow">
@@ -477,7 +473,6 @@ const PACK_STUDIO = [
     const ctaH=u*0.062, gap=u*0.028;
     let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
     s+=ring(W*0.92, H*1.06, u*0.5, mix(bg,BRAND.navy,0.32), 0.6);
-    if(iv) s+=bigNum(si, W-m, m+u*0.30, u*0.34, ink, 0.13, 'end');
     s+=logoTag(lv, m, m, logoW);
     const kFs=u*0.026;
     const footTop=H-m-(c.cta?ctaH+gap:0);
@@ -514,7 +509,6 @@ const PACK_STUDIO = [
     let y=py+u*0.07;
     const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     s+=logoTag('nvy', ipx, y, u*0.23);
-    if(iv) s+=bigNum(si, px+pw-u*0.06, y+u*0.23/LOGO_AR, u*0.19, S.accent, 1, 'end');
     y+=u*0.23/LOGO_AR + u*0.05;
     const kFs=u*0.024;
     if(c.kicker){
@@ -602,7 +596,6 @@ const PACK_STUDIO = [
     s+=`<rect width="${W}" height="${splitY.toFixed(0)}" fill="${acc}"/>`;
     s+=ring(W*0.92, splitY, u*0.32, mix(acc,BRAND.navy,0.4), 0.55);
     s+=logoTag(logoOn(acc), m, m, u*0.24);
-    if(iv) s+=bigNum(si, W-m, m+u*0.24/LOGO_AR+u*0.02, u*0.17, topInk, 0.92, 'end');
     let y=m+u*0.24/LOGO_AR+u*0.045;
     if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.8, kFs, topInk); y+=kFs*1.8; }
     const head=fitHead(c.head, W-2*m, splitY-y-u*0.04, iv?u*0.05:u*0.085, u*0.04, 0.52, 1.0);
@@ -628,7 +621,6 @@ const PACK_STUDIO = [
     let s=`<rect width="${W}" height="${H}" fill="${BRAND.navy}"/>`;
     s+=ring(W*0.9, H*0.94, u*0.36, acc, 0.45);
     s+=logoTag('wht', m, m, u*0.22);
-    if(iv) s+=bigNum(si, W-m, m+u*0.04+u*0.22/LOGO_AR, u*0.18, acc, 1, 'end');
     const qSize=iv?u*0.15:u*0.30;
     s+=`<text x="${(m-u*0.01).toFixed(0)}" y="${(m+u*0.18+qSize*0.74).toFixed(0)}" font-size="${qSize.toFixed(0)}" fill="${acc}" font-weight="900">“</text>`;
     let y=m+u*0.18+qSize*0.46;
@@ -666,7 +658,6 @@ const PACK_STUDIO = [
     const ipw=fw-u*0.12, kFs=u*0.026, ctaH=u*0.06, gap=u*0.03;
     const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     s+=logoTag(logoOn(bg), W/2-u*0.12, fy+u*0.055, u*0.24, 'mid');
-    if(iv) s+=bigNum(si, fx+fw-u*0.07, fy+u*0.055+u*0.24/LOGO_AR, u*0.155, ink, 0.85, 'end');
     let topY=fy+u*0.055+u*0.24/LOGO_AR+u*0.04;
     if(c.kicker){ s+=kickerTag(c.kicker, W/2, topY+kFs*0.8, kFs, ink, 'middle'); topY+=kFs*1.6; }
     const footTop=fy+fh-u*0.06-(c.cta?ctaH+gap:0);
@@ -723,7 +714,6 @@ const PACK_STUDIO = [
     s+=ring(W*0.94, H*0.05, u*0.28, acc, 0.4);
     const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     s+=logoTag('wht', m, m, u*0.22);
-    if(iv) s+=bigNum(si, W-m, m+u*0.22/LOGO_AR, u*0.155, acc, 0.95, 'end');
     let y=m+u*0.22/LOGO_AR+u*0.05;
     const kFs=u*0.026;
     if(c.kicker){ s+=kickerTag(c.kicker, m, y+kFs*0.8, kFs, acc); y+=kFs*1.9; }
@@ -760,7 +750,6 @@ const PACK_STUDIO = [
     const iv=ctx.variant==='inner', si=ctx.slide?ctx.slide.index:0;
     let s=`<rect width="${W}" height="${H}" fill="${bg}"/>`;
     s+=logoTag(logoOn(bg), m, m, u*0.22);
-    if(iv) s+=bigNum(si, W-m, m+u*0.22/LOGO_AR+u*0.30, u*0.40, ink, 0.12, 'end');
     const kFs=u*0.028;
     if(c.kicker){ s+=kickerTag(c.kicker, W-m, m+kFs*0.95, kFs, ink, 'end'); }
     const top=m+u*0.22/LOGO_AR+u*0.04;
@@ -1148,7 +1137,7 @@ function buildSVG(tpl, P, withSafe, copy, variant, slide){
   const inner=tpl.render({c:copy, S, W:P.w, H:P.h, uid, variant, slide});
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.w} ${P.h}" width="${P.w}" height="${P.h}">
     <style>text{font-family:'Effra Trial','Effra',system-ui,'Segoe UI',sans-serif;}</style>
-    ${inner}${slideFurniture(P,S,variant,slide)}${swipePrompt(P,S,variant,slide)}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
+    ${inner}${slideFurniture(P,S,variant,slide)}${swipePrompt(tpl,P,S,variant,slide)}${safeOverlay(P.w,P.h,withSafe)}</svg>`;
 }
 
 // A bold slide number, the unifying motif that makes the inner slides read as one series
@@ -1164,7 +1153,7 @@ function slideFurniture(P,S,variant,slide){
   if(!slide || slide.count<2) return '';
   const W=P.w, H=P.h, u=Math.min(W,H);
   const n=slide.count, i=slide.index;
-  const r=u*0.012, gap=u*0.018;                     // dot radius + spacing
+  const r=u*0.011, gap=u*0.034;                     // dot radius + spacing
   const counter=`${String(i+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}`;
   const cFs=u*0.026;
   const dotsW=(n-1)*gap;
@@ -1190,24 +1179,44 @@ function slideFurniture(P,S,variant,slide){
   return s+`</g>`;
 }
 
-// The cover swipe prompt: a pill that pulls people into the carousel. Cover only, and only
-// when the Swipe prompt toggle is on. Sits just above the progress chip.
-function swipePrompt(P,S,variant,slide){
-  if(!slide || slide.count<2 || variant!=='cover' || !state.swipeCue) return '';
+// Per-template swipe placement + tone, so the cue sits where each cover has room and always
+// contrasts its own background (never green-on-green). Templates not listed fall back to centre.
+const SWIPE = {
+  statement:{pos:'bl',tone:'navy'},   tearaway:{pos:'bl',tone:'navy'},
+  spotlight:{pos:'bc',tone:'yellow'}, split:{pos:'bl',tone:'yellow'},
+  quote:{pos:'bl',tone:'yellow'},     frame:{pos:'bc',tone:'navy'},
+  sidebar:{pos:'br',tone:'yellow'},   index:{pos:'br',tone:'yellow'},
+  marquee:{pos:'br',tone:'navy'},
+};
+function swipeCue(x,y,h,fill,ink,anchor='start'){
+  const txt='Swipe to read', fs=h*0.40, padX=h*0.58;
+  const w=padX*2 + txt.length*fs*0.52 + fs*1.4;
+  const rx = anchor==='middle'? x-w/2 : anchor==='end'? x-w : x;
+  const ax = rx+w-padX*0.85, ay=y+h/2;
+  return `<g>
+    <rect x="${rx.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" rx="${(h/2).toFixed(0)}" fill="${fill}"/>
+    <text x="${(rx+padX).toFixed(0)}" y="${(y+h*0.66).toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${ink}" font-weight="800" letter-spacing="-0.2">${txt}</text>
+    <path d="M ${(ax-fs*0.5).toFixed(1)} ${ay.toFixed(1)} h ${(fs*0.72).toFixed(1)} m ${(-fs*0.34).toFixed(1)} ${(-fs*0.3).toFixed(1)} l ${(fs*0.34).toFixed(1)} ${(fs*0.3).toFixed(1)} l ${(-fs*0.34).toFixed(1)} ${(fs*0.3).toFixed(1)}" stroke="${ink}" stroke-width="${(fs*0.13).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>`;
+}
+// The cover swipe cue. Always on for a carousel cover (no toggle). Position and colour come
+// from SWIPE so each design places it thoughtfully. Sits above the dots so they never clash.
+function swipePrompt(tpl,P,S,variant,slide){
+  if(!slide || slide.count<2 || variant!=='cover') return '';
   const W=P.w, H=P.h, u=Math.min(W,H);
-  const txt='Swipe to read';
-  const fs=u*0.03, padX=u*0.038, h=u*0.082;
-  const arrowW=fs*1.4;
-  const w=padX*2 + txt.length*fs*0.54 + arrowW;
-  const x=W/2 - w/2, y=H - u*0.05 - u*0.066 - u*0.022 - h;   // above the chip
-  const ink=inkOn(S.accent);
-  let s=`<g>
-    <rect x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" rx="${(h/2).toFixed(0)}" fill="${S.accent}"/>
-    <text x="${(x+padX).toFixed(0)}" y="${(y+h*0.64).toFixed(1)}" font-size="${fs.toFixed(1)}" fill="${ink}" font-weight="800" letter-spacing="-0.2">${txt}</text>`;
-  const ax=x+w-padX-arrowW*0.4, ay=y+h/2;
-  s+=`<path d="M ${(ax-fs*0.55).toFixed(1)} ${ay.toFixed(1)} h ${(fs*0.85).toFixed(1)} m ${(-fs*0.38).toFixed(1)} ${(-fs*0.32).toFixed(1)} l ${(fs*0.38).toFixed(1)} ${(fs*0.32).toFixed(1)} l ${(-fs*0.38).toFixed(1)} ${(fs*0.32).toFixed(1)}"
-    stroke="${ink}" stroke-width="${(fs*0.14).toFixed(1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  return s+`</g>`;
+  const cfg = SWIPE[tpl.id] || {pos:'bc',tone:'navy'};
+  const h=u*0.076, mm=Math.round(W*0.075);
+  let fill,ink;
+  if(cfg.tone==='yellow'){ fill=BRAND.yellow; ink=BRAND.navy; }
+  else if(cfg.tone==='accent'){ fill=S.accent; ink=inkOn(S.accent); }
+  else if(cfg.tone==='cream'){ fill=BRAND.cream; ink=BRAND.navy; }
+  else { fill=BRAND.navy; ink='#ffffff'; }
+  const yAbove = H - u*0.05 - u*0.066 - u*0.03 - h;   // clear of the dots chip
+  let x,anchor;
+  if(cfg.pos==='bl'){ x=mm; anchor='start'; }
+  else if(cfg.pos==='br'){ x=W-mm; anchor='end'; }
+  else { x=W/2; anchor='middle'; }
+  return swipeCue(x, yAbove, h, fill, ink, anchor);
 }
 
 /* ============ PNG export ============ */
@@ -1420,14 +1429,6 @@ const st=document.getElementById('safeToggle');
 function toggleSafe(){ state.safe=!state.safe; st.classList.toggle('on',state.safe); renderGallery(); }
 st.onclick=toggleSafe;
 st.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSafe(); } };
-
-const swt=document.getElementById('swipeToggle');
-function toggleSwipe(){
-  state.swipeCue=!state.swipeCue; swt.classList.toggle('on',state.swipeCue); renderGallery();
-  if(document.getElementById('cmodal').classList.contains('on')) renderCarousel();
-}
-swt.onclick=toggleSwipe;
-swt.onkeydown=e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggleSwipe(); } };
 
 /* ============ Studio Autofill: load from link / import ============ */
 function renderAll(){ renderPackMode(); renderSectors(); renderPlacements(); renderLogoMode(); renderGallery(); }
